@@ -136,3 +136,24 @@ docker compose down
 ```
 
 然后把本机的 `portal.db` 上传到服务器，并放进 Docker volume 对应位置。更简单的做法是先不用迁移，重新在服务器 Portal 里创建项目。
+
+
+## 9. Update server code
+
+After changing code locally and pushing it to GitHub, run this on the server:
+
+```bash
+cd /opt/Tool-Nexus
+git pull
+cd /opt/Tool-Nexus/deploy/server
+docker compose up -d --build
+```
+
+Use the same command even if you only changed frontend HTML or Python code, because the Portal image must be rebuilt.
+
+Check status and logs:
+
+```bash
+docker compose ps
+docker compose logs -f portal
+```

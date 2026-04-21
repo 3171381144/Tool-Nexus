@@ -33,7 +33,7 @@ services:
   frps:
     image: ghcr.io/fatedier/frps:v0.65.0
     container_name: tool-nexus-frps
-    command: ["frps", "-c", "/etc/frp/frps.toml"]
+    command: ["-c", "/etc/frp/frps.toml"]
     ports:
       - "7000:7000"
     expose:

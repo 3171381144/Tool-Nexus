@@ -2,7 +2,7 @@
 
 from fastapi import FastAPI
 
-from app.api.routes import auth_router, projects_router, web_router
+from app.api.routes import auth_router, projects_router, users_router, web_router
 from app.seed import bootstrap_database
 
 
@@ -27,4 +27,5 @@ def create_app() -> FastAPI:
     app.include_router(web_router)
     app.include_router(auth_router, prefix="/api")
     app.include_router(projects_router, prefix="/api")
+    app.include_router(users_router, prefix="/api")
     return app
