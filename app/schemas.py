@@ -1,0 +1,47 @@
+﻿from pydantic import BaseModel, Field
+
+
+class LoginRequest(BaseModel):
+    username: str = Field(min_length=1, max_length=64)
+    password: str = Field(min_length=1, max_length=128)
+
+
+class UserOut(BaseModel):
+    id: int
+    username: str
+
+
+class LoginResponse(BaseModel):
+    message: str
+    user: UserOut
+
+
+class SessionResponse(BaseModel):
+    authenticated: bool
+    user: UserOut | None = None
+
+
+class SimpleMessageResponse(BaseModel):
+    message: str
+
+
+class ForwardAuthResult(BaseModel):
+    message: str
+    project: str
+    access_type: str
+
+
+class ProjectCreateRequest(BaseModel):
+    name: str = Field(min_length=1, max_length=128)
+    subdomain: str = Field(min_length=3, max_length=63)
+    is_private: bool = True
+
+
+class ProjectOut(BaseModel):
+    id: int
+    name: str
+    subdomain: str
+    is_private: bool
+    owner_id: int
+    owner_username: str
+    access_type: str

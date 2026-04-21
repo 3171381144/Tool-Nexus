@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+
+# Runtime data
+*.db
+*.sqlite
+*.sqlite3
+deploy/windows-native/logs/
+
+# Local machine FRP client config. Keep the example file in Git.
+deploy/windows-native/frpc.toml
+
+# Vendored Windows binaries; download/install them outside Git.
+deploy/windows-native/bin/*.exe
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

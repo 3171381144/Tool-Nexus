@@ -1,0 +1,30 @@
+﻿{
+    # Cloudflare 负责公网 HTTPS，服务器 Caddy 只接收来自 Cloudflare 的 HTTP 源站流量。
+    auto_https off
+    admin off
+}
+
+http://portal.aim888888.xyz {
+    reverse_proxy portal:8000 {
+        header_up Host {host}
+        header_up X-Forwarded-Proto https
+    }
+}
+
+http://*.aim888888.xyz {
+    forward_auth portal:8000 {
+        uri /api/auth
+        copy_headers X-Auth-User X-Auth-User-Id X-Auth-Project X-Auth-Access-Type
+        header_up Host portal.aim888888.xyz
+        header_up X-Forwarded-Host {host}
+        header_up X-Forwarded-Method {method}
+        header_up X-Forwarded-Uri {uri}
+        header_up X-Forwarded-Proto https
+        header_up X-Portal-Auth-Redirect 1
+    }
+
+    reverse_proxy frps:8080 {
+        header_up Host {host}
+        header_up X-Forwarded-Proto https
+    }
+}

@@ -1,0 +1,24 @@
+# frpc.toml example for team members
+# frp docs: https://gofrp.org/en/docs/setup/
+# frp releases: https://github.com/fatedier/frp/releases
+#
+# Current local self-test values on the center machine:
+# serverAddr = "127.0.0.1"
+# auth.token = "please-change-this-frp-token"
+#
+# Important:
+# 1. Only use 127.0.0.1 when frpc runs on the center machine itself.
+# 2. On any other computer, replace serverAddr with the real reachable address of the center machine.
+# 3. Use the real token provided by the administrator.
+
+serverAddr = "127.0.0.1"
+serverPort = 7000
+auth.token = "please-change-this-frp-token"
+transport.tls.enable = true
+
+[[proxies]]
+name = "zhangsan-tool"
+type = "http"
+localIP = "127.0.0.1"
+localPort = 3000
+customDomains = ["zhangsan-tool.aim888888.xyz"]

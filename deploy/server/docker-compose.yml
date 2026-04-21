@@ -1,0 +1,46 @@
+services:
+  portal:
+    build:
+      context: ../..
+      dockerfile: deploy/server/Dockerfile.portal
+    container_name: tool-nexus-portal
+    environment:
+      PORTAL_SECRET_KEY: ${PORTAL_SECRET_KEY}
+      COOKIE_NAME: portal_session
+      COOKIE_DOMAIN: .aim888888.xyz
+      COOKIE_SECURE: "true"
+      PORTAL_ROOT_DOMAIN: aim888888.xyz
+      DATABASE_URL: sqlite:////data/portal.db
+      SESSION_TTL_SECONDS: "43200"
+    volumes:
+      - portal_data:/data
+    expose:
+      - "8000"
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: tool-nexus-caddy
+    depends_on:
+      - portal
+      - frps
+    ports:
+      - "80:80"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+    restart: unless-stopped
+
+  frps:
+    image: ghcr.io/fatedier/frps:v0.65.0
+    container_name: tool-nexus-frps
+    command: ["frps", "-c", "/etc/frp/frps.toml"]
+    ports:
+      - "7000:7000"
+    expose:
+      - "8080"
+    volumes:
+      - ./frps.toml:/etc/frp/frps.toml:ro
+    restart: unless-stopped
+
+volumes:
+  portal_data:

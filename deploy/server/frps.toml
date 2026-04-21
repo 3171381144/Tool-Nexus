@@ -1,0 +1,10 @@
+bindPort = 7000
+vhostHTTPPort = 8080
+
+auth.token = "change-this-frp-token"
+transport.tls.force = true
+
+webServer.addr = "127.0.0.1"
+webServer.port = 7500
+webServer.user = "admin"
+webServer.password = "change-this-dashboard-password"
