@@ -6,20 +6,30 @@ class LoginRequest(BaseModel):
     password: str = Field(min_length=1, max_length=128)
 
 
+class RegisterRequest(BaseModel):
+    username: str = Field(min_length=1, max_length=64)
+    nickname: str | None = Field(default=None, max_length=64)
+    password: str = Field(min_length=6, max_length=128)
+    invite_code: str = Field(min_length=1, max_length=128)
+
+
 class UserCreateRequest(BaseModel):
     username: str = Field(min_length=1, max_length=64)
+    nickname: str | None = Field(default=None, max_length=64)
     password: str = Field(min_length=6, max_length=128)
     is_admin: bool = False
 
 
 class UserUpdateRequest(BaseModel):
     username: str | None = Field(default=None, min_length=1, max_length=64)
+    nickname: str | None = Field(default=None, max_length=64)
     password: str | None = Field(default=None, min_length=6, max_length=128)
 
 
 class UserOut(BaseModel):
     id: int
     username: str
+    nickname: str
     is_admin: bool
 
 
@@ -61,5 +71,6 @@ class ProjectOut(BaseModel):
     is_private: bool
     owner_id: int
     owner_username: str
+    owner_nickname: str
     access_type: str
     granted_users: list[UserOut] = Field(default_factory=list)

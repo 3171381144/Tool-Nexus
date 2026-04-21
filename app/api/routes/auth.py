@@ -6,8 +6,10 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.db import get_db
-from app.schemas import ForwardAuthResult, LoginRequest, LoginResponse, SessionResponse, SimpleMessageResponse, UserOut
+from app.models import User
+from app.schemas import ForwardAuthResult, LoginRequest, LoginResponse, RegisterRequest, SessionResponse, SimpleMessageResponse
 from app.services.auth import authenticate_user, build_forward_auth_result, build_login_response, build_logout_response, get_current_user
+from app.services.users import register_user, serialize_user
 
 
 router = APIRouter(tags=["auth"])
@@ -16,6 +18,15 @@ router = APIRouter(tags=["auth"])
 @router.post("/login", response_model=LoginResponse)
 def login(payload: LoginRequest, response: Response, db: Session = Depends(get_db)) -> LoginResponse:
     user = authenticate_user(db, payload.username, payload.password)
+    return build_login_response(user, response)
+
+
+@router.post("/register", response_model=LoginResponse)
+def register(payload: RegisterRequest, response: Response, db: Session = Depends(get_db)) -> LoginResponse:
+    user_out = register_user(db, payload)
+    user = db.get(User, user_out.id)
+    if user is None:
+        raise HTTPException(status_code=500, detail="User registration failed")
     return build_login_response(user, response)
 
 
@@ -32,7 +43,7 @@ def me(
     user = get_current_user(db, session_token)
     if not user:
         return SessionResponse(authenticated=False, user=None)
-    return SessionResponse(authenticated=True, user=UserOut(id=user.id, username=user.username, is_admin=user.is_admin))
+    return SessionResponse(authenticated=True, user=serialize_user(user))
 
 
 def _build_login_redirect(forwarded_host: Optional[str], forwarded_uri: Optional[str]) -> str:
@@ -61,4 +72,3 @@ def forward_auth(
         if x_portal_auth_redirect == "1" and exc.status_code in {401, 403}:
             return RedirectResponse(url=_build_login_redirect(x_forwarded_host, x_forwarded_uri), status_code=302)
         raise
-

@@ -1,4 +1,4 @@
-﻿import os
+import os
 import re
 from dataclasses import dataclass
 
@@ -11,6 +11,7 @@ class Settings:
     cookie_domain: str | None = os.getenv("COOKIE_DOMAIN") or None
     cookie_secure: bool = os.getenv("COOKIE_SECURE", "false").lower() == "true"
     root_domain: str | None = os.getenv("PORTAL_ROOT_DOMAIN") or None
+    registration_invite_code: str = os.getenv("REGISTRATION_INVITE_CODE", "tool-nexus-invite")
     session_ttl_seconds: int = int(os.getenv("SESSION_TTL_SECONDS", "43200"))
     pbkdf2_iterations: int = 120_000
     subdomain_re: re.Pattern[str] = re.compile(r"^[a-z0-9](?:[a-z0-9-]{1,61}[a-z0-9])?$")

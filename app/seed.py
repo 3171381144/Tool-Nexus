@@ -12,14 +12,24 @@ def ensure_schema() -> None:
         columns = {column["name"] for column in inspect(connection).get_columns("users")}
         if "is_admin" not in columns:
             connection.execute(text("ALTER TABLE users ADD COLUMN is_admin BOOLEAN NOT NULL DEFAULT 0"))
+        if "nickname" not in columns:
+            connection.execute(text("ALTER TABLE users ADD COLUMN nickname VARCHAR(64) NOT NULL DEFAULT ''"))
+        connection.execute(text("UPDATE users SET nickname = username WHERE nickname IS NULL OR nickname = ''"))
 
 
-def ensure_user(db: Session, username: str, password: str, *, is_admin: bool = False) -> User:
+def ensure_user(db: Session, username: str, password: str, *, nickname: str = "", is_admin: bool = False) -> User:
     user = db.scalar(select(User).where(User.username == username))
     if user is None:
-        user = User(username=username, password_hash=hash_password(password), is_admin=is_admin)
+        user = User(
+            username=username,
+            nickname=nickname or username,
+            password_hash=hash_password(password),
+            is_admin=is_admin,
+        )
         db.add(user)
         return user
+    if not user.nickname:
+        user.nickname = nickname or username
     if is_admin and not user.is_admin:
         user.is_admin = True
     return user
@@ -29,7 +39,7 @@ def bootstrap_database() -> None:
     ensure_schema()
 
     with SessionLocal() as db:
-        ensure_user(db, "zhangsan", "zhangsan123", is_admin=True)
-        ensure_user(db, "lisi", "lisi123")
-        ensure_user(db, "wangwu", "wangwu123")
+        ensure_user(db, "zhangsan", "zhangsan123", nickname="Zhangsan", is_admin=True)
+        ensure_user(db, "lisi", "lisi123", nickname="Lisi")
+        ensure_user(db, "wangwu", "wangwu123", nickname="Wangwu")
         db.commit()

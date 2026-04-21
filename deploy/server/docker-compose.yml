@@ -10,6 +10,7 @@ services:
       COOKIE_DOMAIN: .aim888888.xyz
       COOKIE_SECURE: "true"
       PORTAL_ROOT_DOMAIN: aim888888.xyz
+      REGISTRATION_INVITE_CODE: ${REGISTRATION_INVITE_CODE:-tool-nexus-invite}
       DATABASE_URL: sqlite:////data/portal.db
       SESSION_TTL_SECONDS: "43200"
     volumes:
@@ -44,3 +45,4 @@ services:
 
 volumes:
   portal_data:
+

@@ -3,13 +3,19 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.models import User
-from app.schemas import UserCreateRequest, UserOut, UserUpdateRequest
+from app.schemas import RegisterRequest, UserCreateRequest, UserOut, UserUpdateRequest
 from app.services.auth import hash_password
 
 
+def _clean_optional_text(value: str | None) -> str:
+    return value.strip() if value else ""
+
+
 def serialize_user(user: User) -> UserOut:
-    return UserOut(id=user.id, username=user.username, is_admin=user.is_admin)
+    nickname = user.nickname or user.username
+    return UserOut(id=user.id, username=user.username, nickname=nickname, is_admin=user.is_admin)
 
 
 def list_users(db: Session) -> list[UserOut]:
@@ -17,29 +23,59 @@ def list_users(db: Session) -> list[UserOut]:
     return [serialize_user(user) for user in users]
 
 
-def create_user(db: Session, payload: UserCreateRequest) -> UserOut:
-    username = payload.username.strip()
+def _create_user_record(db: Session, *, username: str, password: str, nickname: str = "", is_admin: bool = False) -> UserOut:
+    username = username.strip()
     if not username:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="用户名不能为空")
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Username cannot be empty")
 
-    user = User(username=username, password_hash=hash_password(payload.password), is_admin=payload.is_admin)
+    user = User(
+        username=username,
+        nickname=nickname.strip() or username,
+        password_hash=hash_password(password),
+        is_admin=is_admin,
+    )
     db.add(user)
     try:
         db.commit()
     except IntegrityError:
         db.rollback()
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="用户名已存在")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Username already exists")
 
     db.refresh(user)
     return serialize_user(user)
+
+
+def create_user(db: Session, payload: UserCreateRequest) -> UserOut:
+    return _create_user_record(
+        db,
+        username=payload.username,
+        nickname=_clean_optional_text(payload.nickname),
+        password=payload.password,
+        is_admin=payload.is_admin,
+    )
+
+
+def register_user(db: Session, payload: RegisterRequest) -> UserOut:
+    if payload.invite_code != settings.registration_invite_code:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid invite code")
+    return _create_user_record(
+        db,
+        username=payload.username,
+        nickname=_clean_optional_text(payload.nickname),
+        password=payload.password,
+        is_admin=False,
+    )
 
 
 def update_current_user(db: Session, user: User, payload: UserUpdateRequest) -> UserOut:
     username = payload.username.strip() if payload.username is not None else None
     if username is not None:
         if not username:
-            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="用户名不能为空")
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Username cannot be empty")
         user.username = username
+
+    if payload.nickname is not None:
+        user.nickname = payload.nickname.strip() or (username or user.username)
 
     if payload.password is not None:
         user.password_hash = hash_password(payload.password)
@@ -48,7 +84,7 @@ def update_current_user(db: Session, user: User, payload: UserUpdateRequest) -> 
         db.commit()
     except IntegrityError:
         db.rollback()
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="用户名已存在")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Username already exists")
 
     db.refresh(user)
     return serialize_user(user)

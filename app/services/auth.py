@@ -25,6 +25,10 @@ def _b64url_decode(value: str) -> bytes:
     return base64.urlsafe_b64decode(value + padding)
 
 
+def _user_out(user: User) -> UserOut:
+    return UserOut(id=user.id, username=user.username, nickname=user.nickname or user.username, is_admin=user.is_admin)
+
+
 def hash_password(password: str) -> str:
     salt = secrets.token_bytes(16)
     digest = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, settings.pbkdf2_iterations)
@@ -95,7 +99,7 @@ def get_current_user(db: Session, session_token: Optional[str]) -> Optional[User
 def authenticate_user(db: Session, username: str, password: str) -> User:
     user = db.scalar(select(User).where(User.username == username))
     if not user or not verify_password(password, user.password_hash):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="用户名或密码错误")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid username or password")
     return user
 
 
@@ -110,7 +114,7 @@ def build_login_response(user: User, response: Response) -> LoginResponse:
         max_age=settings.session_ttl_seconds,
         path="/",
     )
-    return LoginResponse(message="登录成功", user=UserOut(id=user.id, username=user.username, is_admin=user.is_admin))
+    return LoginResponse(message="Login successful", user=_user_out(user))
 
 
 def build_logout_response(response: Response) -> SimpleMessageResponse:
@@ -119,7 +123,7 @@ def build_logout_response(response: Response) -> SimpleMessageResponse:
         domain=settings.cookie_domain,
         path="/",
     )
-    return SimpleMessageResponse(message="已退出登录")
+    return SimpleMessageResponse(message="Logged out")
 
 
 def extract_subdomain(forwarded_host: str) -> str:
@@ -128,7 +132,7 @@ def extract_subdomain(forwarded_host: str) -> str:
     if settings.root_domain:
         root_domain = settings.root_domain.lower().lstrip(".")
         if host == root_domain or not host.endswith(f".{root_domain}"):
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="X-Forwarded-Host 不在受管域名下")
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="X-Forwarded-Host is outside root domain")
         subdomain = host[: -(len(root_domain) + 1)]
         if "." in subdomain:
             subdomain = subdomain.split(".", maxsplit=1)[0]
@@ -136,7 +140,7 @@ def extract_subdomain(forwarded_host: str) -> str:
 
     labels = [label for label in host.split(".") if label]
     if len(labels) < 3:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="X-Forwarded-Host 缺少子域名")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="X-Forwarded-Host missing subdomain")
     return labels[0]
 
 
@@ -156,26 +160,26 @@ def authorize_project_access(db: Session, user: User, project: Project) -> str:
     if access_row:
         return "shared"
 
-    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="无权访问该项目")
+    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No permission for this project")
 
 
 def build_forward_auth_result(db: Session, session_token: Optional[str], forwarded_host: Optional[str], response: Response) -> ForwardAuthResult:
     user = get_current_user(db, session_token)
     if not user:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="未登录")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not logged in")
 
     if not forwarded_host:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="缺少 X-Forwarded-Host")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Missing X-Forwarded-Host")
 
     subdomain = extract_subdomain(forwarded_host)
     project = db.scalar(select(Project).where(Project.subdomain == subdomain))
     if not project:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="目标子域名未注册")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Target subdomain is not registered")
 
     access_type = authorize_project_access(db, user, project)
     response.headers["X-Auth-User"] = quote(user.username, safe="")
+    response.headers["X-Auth-Nickname"] = quote(user.nickname or user.username, safe="")
     response.headers["X-Auth-User-Id"] = str(user.id)
     response.headers["X-Auth-Project"] = project.subdomain
     response.headers["X-Auth-Access-Type"] = access_type
     return ForwardAuthResult(message="ok", project=project.subdomain, access_type=access_type)
-

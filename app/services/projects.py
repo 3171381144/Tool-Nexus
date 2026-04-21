@@ -8,8 +8,12 @@ from app.models import Project, ProjectAccess, User
 from app.schemas import ProjectAccessUpdateRequest, ProjectCreateRequest, ProjectOut, UserOut
 
 
+def _display_name(user: User) -> str:
+    return user.nickname or user.username
+
+
 def _user_out(user: User) -> UserOut:
-    return UserOut(id=user.id, username=user.username, is_admin=user.is_admin)
+    return UserOut(id=user.id, username=user.username, nickname=_display_name(user), is_admin=user.is_admin)
 
 
 def serialize_project(project: Project, access_type: str) -> ProjectOut:
@@ -21,6 +25,7 @@ def serialize_project(project: Project, access_type: str) -> ProjectOut:
         is_private=project.is_private,
         owner_id=project.owner_id,
         owner_username=project.owner.username,
+        owner_nickname=_display_name(project.owner),
         access_type=access_type,
         granted_users=granted_users,
     )
@@ -64,7 +69,7 @@ def _validate_whitelist_user_ids(db: Session, owner: User, whitelist_user_ids: l
     found_ids = {user.id for user in users}
     missing_ids = [user_id for user_id in deduped_ids if user_id not in found_ids]
     if missing_ids:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=f"用户不存在: {missing_ids}")
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=f"Users not found: {missing_ids}")
     return users
 
 
@@ -73,7 +78,7 @@ def _normalize_subdomain(subdomain: str) -> str:
     if not settings.subdomain_re.fullmatch(normalized_subdomain):
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="子域名只能包含小写字母、数字和中划线，长度 3-63",
+            detail="Subdomain must be 3-63 chars and only contain lowercase letters, numbers, and hyphens",
         )
     return normalized_subdomain
 
@@ -81,7 +86,7 @@ def _normalize_subdomain(subdomain: str) -> str:
 def create_project_for_user(db: Session, user: User, payload: ProjectCreateRequest) -> ProjectOut:
     normalized_subdomain = _normalize_subdomain(payload.subdomain)
     if payload.whitelist_user_ids and not user.is_admin:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="只有管理员可以设置白名单")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only admins can set whitelist users")
 
     granted_users = _validate_whitelist_user_ids(db, user, payload.whitelist_user_ids) if user.is_admin else []
 
@@ -99,7 +104,7 @@ def create_project_for_user(db: Session, user: User, payload: ProjectCreateReque
         db.commit()
     except IntegrityError:
         db.rollback()
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="子域名已被占用")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Subdomain already exists")
 
     db.refresh(project)
     return serialize_project(project, "owner")
@@ -108,7 +113,7 @@ def create_project_for_user(db: Session, user: User, payload: ProjectCreateReque
 def update_project_access(db: Session, admin: User, project_id: int, payload: ProjectAccessUpdateRequest) -> ProjectOut:
     project = db.get(Project, project_id)
     if not project:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="项目不存在")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
 
     granted_users = _validate_whitelist_user_ids(db, project.owner, payload.whitelist_user_ids)
     db.execute(delete(ProjectAccess).where(ProjectAccess.project_id == project.id))

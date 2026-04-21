@@ -1,232 +1,112 @@
-PORTAL_PAGE_HTML = """
-<!doctype html>
-<html lang="zh-CN">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Tool Nexus Portal</title>
-  <style>
-    :root { --navy:#062443; --navy2:#0e3762; --bg:#f6f8fc; --side:#f0f3f8; --card:#ffffff; --line:#e6ebf2; --text:#0b223d; --muted:#748296; --blue:#2563eb; --green:#16a34a; --red:#dc2626; --shadow:0 18px 48px rgba(6,36,67,.08); }
-    * { box-sizing:border-box; }
-    body { margin:0; min-height:100vh; background:var(--bg); color:var(--text); font-family:"Microsoft YaHei","PingFang SC","Noto Sans SC","Segoe UI",sans-serif; }
-    button,input,select { font:inherit; } a { color:inherit; text-decoration:none; }
-    .topbar { height:72px; background:var(--navy); color:#fff; display:flex; align-items:center; justify-content:space-between; padding:0 30px; box-shadow:0 10px 30px rgba(6,36,67,.18); position:sticky; top:0; z-index:20; }
-    .brand { display:flex; align-items:center; gap:12px; font-weight:900; font-size:20px; letter-spacing:.02em; }
-    .brand-mark { width:34px; height:34px; border-radius:10px; background:#dbeafe; color:var(--navy); display:grid; place-items:center; font-weight:900; }
-    .top-actions { display:flex; align-items:center; gap:12px; }
-    .top-link { font-weight:800; padding:10px 8px; border-bottom:2px solid transparent; }
-    .top-link.active { border-color:#fff; }
-    .btn { border:0; border-radius:14px; padding:12px 18px; font-weight:900; cursor:pointer; }
-    .btn-primary { background:var(--navy); color:#fff; box-shadow:0 14px 28px rgba(6,36,67,.18); }
-    .btn-soft { background:#f1f5f9; color:var(--navy); }
-    .btn-line { background:#fff; color:var(--navy); border:1px solid var(--line); }
-    .user-chip { display:flex; align-items:center; gap:10px; padding:9px 14px; border-radius:14px; background:rgba(255,255,255,.1); font-weight:800; }
-    .avatar { width:36px; height:36px; border-radius:999px; background:#bfdbfe; color:var(--navy); display:grid; place-items:center; font-weight:900; }
-    .layout { display:grid; grid-template-columns:320px 1fr; min-height:calc(100vh - 72px); }
-    .sidebar { background:var(--side); border-right:1px solid var(--line); padding:28px 16px; display:flex; flex-direction:column; justify-content:space-between; }
-    .profile { display:flex; align-items:center; gap:14px; padding:4px 12px 24px; }
-    .profile .avatar { width:58px; height:58px; box-shadow:var(--shadow); }
-    .profile h3 { margin:0 0 4px; font-size:18px; }
-    .profile p { margin:0; color:var(--muted); font-size:13px; }
-    .menu { display:grid; gap:10px; }
-    .menu button { width:100%; display:flex; align-items:center; gap:12px; border:0; border-radius:12px; padding:15px 18px; background:transparent; color:#334b63; font-weight:900; text-align:left; cursor:pointer; }
-    .menu button.active { background:var(--navy2); color:#fff; box-shadow:0 12px 26px rgba(6,36,67,.18); }
-    .menu .num { width:24px; color:inherit; opacity:.75; }
-    .hint-card { margin:20px 10px 0; border:1px solid #d9e1ec; border-radius:18px; padding:16px; color:#526174; background:#eef2f7; font-size:13px; line-height:1.7; }
-    .content { padding:42px min(56px,4vw); }
-    .hero { display:flex; align-items:flex-start; justify-content:space-between; gap:24px; margin-bottom:30px; }
-    .eyebrow { color:#8392a7; font-weight:900; letter-spacing:.22em; font-size:12px; margin-bottom:8px; }
-    h1 { margin:0; color:var(--navy); font-size:clamp(34px,4vw,56px); line-height:1; letter-spacing:-.05em; font-family:Georgia,"Microsoft YaHei",serif; }
-    .subtitle { margin:12px 0 0; color:#526174; font-weight:700; }
-    .stats { display:flex; gap:16px; flex-wrap:wrap; }
-    .stat { min-width:160px; background:#fff; border-radius:26px; padding:18px 22px; box-shadow:var(--shadow); display:flex; align-items:center; gap:14px; }
-    .stat-icon { width:52px; height:52px; border-radius:18px; background:#f1f5f9; display:grid; place-items:center; color:var(--navy); font-weight:900; }
-    .stat small { color:#8794a8; font-weight:900; }
-    .stat strong { display:block; margin-top:4px; color:var(--navy); font-size:28px; }
-    .section { display:none; }
-    .section.active { display:block; }
-    .grid { display:grid; grid-template-columns:minmax(0,1.1fr) minmax(420px,.9fr); gap:24px; align-items:start; }
-    .panel { background:#fff; border:1px solid var(--line); border-radius:28px; box-shadow:var(--shadow); padding:28px; }
-    .panel-head { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:22px; }
-    .panel-title { display:flex; align-items:flex-start; gap:12px; }
-    .bar { width:6px; height:30px; border-radius:99px; background:var(--navy); margin-top:3px; }
-    h2 { margin:0; color:var(--navy); font-size:24px; font-family:Georgia,"Microsoft YaHei",serif; }
-    .muted { color:var(--muted); font-size:13px; line-height:1.65; }
-    .project-list,.user-list { display:grid; gap:14px; }
-    .project { display:grid; grid-template-columns:1fr auto; gap:18px; align-items:center; padding:18px 20px; border:1px solid var(--line); border-radius:22px; background:#fff; box-shadow:0 8px 22px rgba(6,36,67,.04); }
-    .project h3 { margin:0 0 6px; color:var(--navy); font-size:18px; }
-    .host { color:#8492a6; font-size:13px; }
-    .tags { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
-    .tag { border-radius:999px; padding:6px 10px; background:#eef2f7; color:#526174; font-size:12px; font-weight:900; }
-    .tag.green { background:#dcfce7; color:#166534; } .tag.blue { background:#dbeafe; color:#1e40af; } .tag.red { background:#fee2e2; color:#991b1b; }
-    form { display:grid; gap:14px; }
-    label { display:grid; gap:8px; color:#7b89a0; font-weight:900; font-size:12px; letter-spacing:.04em; }
-    input,select { width:100%; border:0; border-bottom:2px solid #c8d1de; background:transparent; padding:13px 4px; color:#172033; outline:none; }
-    input:focus,select:focus { border-color:var(--navy); }
-    .row { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
-    .whitelist { border:1px solid var(--line); background:#fbfcfe; border-radius:18px; padding:16px; }
-    .check-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:10px; margin-top:12px; }
-    .check { display:flex; align-items:center; gap:9px; background:#fff; border:1px solid var(--line); border-radius:12px; padding:10px; color:#223955; font-weight:800; }
-    .check input { width:auto; }
-    .notice { min-height:20px; color:var(--muted); font-size:13px; }
-    .notice.error { color:var(--red); } .notice.success { color:#15803d; }
-    .config { background:var(--navy); color:#dbeafe; border-radius:18px; padding:18px; overflow:auto; font:12px/1.65 Consolas,"Cascadia Mono",monospace; }
-    .user { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px 16px; border:1px solid var(--line); border-radius:16px; background:#f8fafc; }
-    .empty { border:1px dashed #c8d1de; border-radius:20px; padding:24px; color:var(--muted); background:#fbfcfe; }
-    .hidden { display:none!important; }
-    @media(max-width:1120px){ .layout{grid-template-columns:1fr}.sidebar{display:none}.hero{flex-direction:column}.grid{grid-template-columns:1fr} }
-    @media(max-width:680px){ .topbar{padding:0 16px}.content{padding:26px 16px}.row,.project{grid-template-columns:1fr}.top-link{display:none} }
-  </style>
-</head>
-<body>
-<header class="topbar">
-  <div class="brand"><span class="brand-mark">TN</span><span>Tool Nexus 内部工具网关</span></div>
-  <nav class="top-actions">
-    <a class="top-link active" href="/">首页</a>
-    <button id="refreshButton" class="btn btn-soft">刷新</button>
-    <button id="logoutButton" class="btn btn-soft hidden">退出</button>
-    <a id="loginLink" href="/login"><button class="btn btn-soft" type="button">登录</button></a>
-    <div class="user-chip"><span class="avatar" id="avatarText">TN</span><span id="topUser">未登录</span></div>
-  </nav>
-</header>
-<div class="layout">
-  <aside class="sidebar">
-    <div>
-      <div class="profile"><div class="avatar" id="sideAvatar">TN</div><div><h3 id="sideUser">未登录</h3><p id="sideRole">Tool Nexus 用户</p></div></div>
-      <div class="menu">
-        <button class="active" data-section="projects"><span class="num">01</span>项目中心</button>
-        <button data-section="create"><span class="num">02</span>新增工具</button>
-        <button data-section="profile"><span class="num">03</span>个人资料</button>
-        <button data-section="users" data-admin-only="1"><span class="num">04</span>用户管理</button>
-        <button data-section="config"><span class="num">05</span>接入配置</button>
-      </div>
-    </div>
-    <div class="hint-card"><strong>系统提示</strong><br>普通用户可以登记自己的工具；只有管理员可以创建用户和配置项目白名单。</div>
-  </aside>
-  <main class="content">
-    <section class="hero">
-      <div><div class="eyebrow">INTERNAL TOOL PORTAL</div><h1>统一入口与权限管理</h1><p class="subtitle">管理团队工具子域名、登录用户、白名单授权和 FRP 接入。</p></div>
-      <div class="stats"><div class="stat"><div class="stat-icon">P</div><div><small>项目数</small><strong id="projectCount">0</strong></div></div><div class="stat"><div class="stat-icon">U</div><div><small>用户数</small><strong id="userCount">0</strong></div></div></div>
-    </section>
+def _u(value: str) -> str:
+    return value.encode("ascii").decode("unicode_escape")
 
-    <section id="section-projects" class="section active">
-      <div class="panel"><div class="panel-head"><div class="panel-title"><span class="bar"></span><div><h2>项目列表</h2><p class="muted">拥有项目、公开项目和白名单授权项目会显示在这里。</p></div></div></div><div id="projectList" class="project-list"></div><div id="projectEmpty" class="empty hidden">暂无可见项目。</div></div>
-    </section>
 
-    <section id="section-create" class="section">
-      <div class="grid"><div class="panel"><div class="panel-head"><div class="panel-title"><span class="bar"></span><div><h2>新增网页工具</h2><p class="muted">创建后把生成的 customDomains 写入团队成员的 frpc.toml。</p></div></div></div>
-        <form id="projectForm"><label>工具名称<input id="projectName" placeholder="image converter" required></label><div class="row"><label>子域名前缀<input id="projectSubdomain" placeholder="image-tool" required pattern="[a-z0-9-]+"></label><label>访问范围<select id="projectVisibility"><option value="true">私有：owner + 白名单</option><option value="false">公开：所有登录用户</option></select></label></div><div id="whitelistBox" class="whitelist"><strong>白名单用户</strong><p class="muted">owner 默认有权限，不需要勾选自己。只有管理员可以设置白名单。</p><div id="whitelistUsers" class="check-grid"></div></div><button class="btn btn-primary" type="submit">创建项目</button><div id="formNotice" class="notice"></div></form>
-      </div><div class="panel"><div class="panel-head"><div class="panel-title"><span class="bar"></span><div><h2>接入片段</h2><p class="muted">创建项目后这里会显示客户端配置片段。</p></div></div></div><pre id="configPreview" class="config">customDomains will appear here after creating a project.</pre></div></div>
-    </section>
+def _fill(template: str, values: dict[str, str]) -> str:
+    for key in sorted(values, key=len, reverse=True):
+        value = values[key]
+        template = template.replace("@" + key + "@", value)
+        template = template.replace("@" + key, value)
+    return template
 
-    <section id="section-profile" class="section">
-      <div class="panel"><div class="panel-head"><div class="panel-title"><span class="bar"></span><div><h2>个人资料</h2><p class="muted">用户可以修改自己的用户名和密码。</p></div></div></div><form id="profileForm"><div class="row"><label>用户名<input id="profileUsername" required></label><label>新密码<input id="profilePassword" type="password" minlength="6" placeholder="不修改则留空"></label></div><button class="btn btn-primary" type="submit">保存修改</button><div id="profileNotice" class="notice"></div></form></div>
-    </section>
 
-    <section id="section-users" class="section">
-      <div class="panel"><div class="panel-head"><div class="panel-title"><span class="bar"></span><div><h2>用户管理</h2><p class="muted">只有管理员可以创建用户。管理员也可以创建其他管理员。</p></div></div></div><form id="userForm"><div class="row"><label>用户名<input id="newUsername" placeholder="lisi" required></label><label>初始密码<input id="newPassword" type="password" minlength="6" required></label></div><label class="check"><input id="newIsAdmin" type="checkbox">设为管理员</label><button class="btn btn-primary" type="submit">新增用户</button><div id="userNotice" class="notice"></div></form><div id="userList" class="user-list" style="margin-top:18px"></div></div>
-    </section>
 
-    <section id="section-config" class="section">
-      <div class="panel"><div class="panel-head"><div class="panel-title"><span class="bar"></span><div><h2>接入配置</h2><p class="muted">发给团队成员的固定信息。每个工具只需要在 frpc.toml 中增加一个 proxies 配置块。</p></div></div></div><pre class="config">serverAddr = "frp.aim888888.xyz"
-serverPort = 7000
-auth.token = "请向管理员索取"
-transport.tls.enable = true
+_ZH = {
+    "brand": _u(r"\u5185\u90e8\u5de5\u5177\u7f51\u5173"),
+    "home": _u(r"\u9996\u9875"),
+    "refresh": _u(r"\u5237\u65b0"),
+    "logout": _u(r"\u9000\u51fa"),
+    "login": _u(r"\u767b\u5f55"),
+    "register": _u(r"\u6ce8\u518c"),
+    "unlogged": _u(r"\u672a\u767b\u5f55"),
+    "user": _u(r"\u7528\u6237"),
+    "admin": _u(r"\u7ba1\u7406\u5458"),
+    "project_center": _u(r"\u9879\u76ee\u4e2d\u5fc3"),
+    "new_tool": _u(r"\u65b0\u589e\u5de5\u5177"),
+    "profile": _u(r"\u4e2a\u4eba\u8d44\u6599"),
+    "user_admin": _u(r"\u7528\u6237\u7ba1\u7406"),
+    "hero": _u(r"\u7edf\u4e00\u5165\u53e3\u4e0e\u6743\u9650\u7ba1\u7406"),
+    "hero_sub": _u(r"\u7ba1\u7406\u56e2\u961f\u5de5\u5177\u5b50\u57df\u540d\u3001\u767b\u5f55\u7528\u6237\u3001\u767d\u540d\u5355\u6388\u6743\u548c FRP \u63a5\u5165\u3002"),
+    "project_count": _u(r"\u9879\u76ee\u6570"),
+    "user_count": _u(r"\u7528\u6237\u6570"),
+    "project_list": _u(r"\u9879\u76ee\u5217\u8868"),
+    "project_help": _u(r"\u62e5\u6709\u9879\u76ee\u3001\u516c\u5f00\u9879\u76ee\u548c\u767d\u540d\u5355\u6388\u6743\u9879\u76ee\u4f1a\u663e\u793a\u5728\u8fd9\u91cc\u3002"),
+    "no_projects": _u(r"\u6682\u65e0\u53ef\u89c1\u9879\u76ee\u3002"),
+    "system_tip": _u(r"\u7cfb\u7edf\u63d0\u793a"),
+    "tip": _u(r"\u666e\u901a\u7528\u6237\u53ef\u4ee5\u767b\u8bb0\u81ea\u5df1\u7684\u5de5\u5177\uff1b\u53ea\u6709\u7ba1\u7406\u5458\u53ef\u4ee5\u521b\u5efa\u7528\u6237\u548c\u914d\u7f6e\u9879\u76ee\u767d\u540d\u5355\u3002"),
+    "new_web_tool": _u(r"\u65b0\u589e\u7f51\u9875\u5de5\u5177"),
+    "new_help": _u(r"\u521b\u5efa\u540e\u628a\u751f\u6210\u7684 customDomains \u5199\u5165\u56e2\u961f\u6210\u5458\u7684 frpc.toml\u3002"),
+    "tool_name": _u(r"\u5de5\u5177\u540d\u79f0"),
+    "subdomain": _u(r"\u5b50\u57df\u540d\u524d\u7f00"),
+    "visibility": _u(r"\u8bbf\u95ee\u8303\u56f4"),
+    "private": _u(r"\u79c1\u6709\uff1aowner + \u767d\u540d\u5355"),
+    "public": _u(r"\u516c\u5f00\uff1a\u6240\u6709\u767b\u5f55\u7528\u6237"),
+    "whitelist": _u(r"\u767d\u540d\u5355\u7528\u6237"),
+    "whitelist_help": _u(r"owner \u9ed8\u8ba4\u6709\u6743\u9650\uff0c\u4e0d\u9700\u8981\u52fe\u9009\u81ea\u5df1\u3002\u53ea\u6709\u7ba1\u7406\u5458\u53ef\u4ee5\u8bbe\u7f6e\u767d\u540d\u5355\u3002"),
+    "create_project": _u(r"\u521b\u5efa\u9879\u76ee"),
+    "client_snippet": _u(r"\u63a5\u5165\u7247\u6bb5"),
+    "client_help": _u(r"\u521b\u5efa\u9879\u76ee\u540e\u8fd9\u91cc\u4f1a\u663e\u793a\u5ba2\u6237\u7aef\u914d\u7f6e\u7247\u6bb5\u3002"),
+    "username": _u(r"\u7528\u6237\u540d"),
+    "nickname": _u(r"\u6635\u79f0"),
+    "new_password": _u(r"\u65b0\u5bc6\u7801"),
+    "profile_help": _u(r"\u7528\u6237\u53ef\u4ee5\u4fee\u6539\u81ea\u5df1\u7684\u7528\u6237\u540d\u3001\u6635\u79f0\u548c\u5bc6\u7801\u3002"),
+    "save": _u(r"\u4fdd\u5b58\u4fee\u6539"),
+    "initial_password": _u(r"\u521d\u59cb\u5bc6\u7801"),
+    "set_admin": _u(r"\u8bbe\u4e3a\u7ba1\u7406\u5458"),
+    "add_user": _u(r"\u65b0\u589e\u7528\u6237"),
+    "user_admin_help": _u(r"\u53ea\u6709\u7ba1\u7406\u5458\u53ef\u4ee5\u521b\u5efa\u7528\u6237\u3002\u6ce8\u518c\u529f\u80fd\u9700\u8981\u7ba1\u7406\u5458\u53d1\u653e\u9080\u8bf7\u7801\u3002"),
+    "open": _u(r"\u6253\u5f00"),
+    "no_other_users": _u(r"\u6682\u65e0\u5176\u4ed6\u7528\u6237\u3002"),
+    "project_created": _u(r"\u9879\u76ee\u5df2\u521b\u5efa\u3002"),
+    "user_created": _u(r"\u7528\u6237\u5df2\u521b\u5efa\u3002"),
+    "profile_updated": _u(r"\u8d44\u6599\u5df2\u66f4\u65b0\u3002"),
+    "ask_token": _u(r"\u8bf7\u5411\u7ba1\u7406\u5458\u7d22\u53d6"),
+}
 
-[[proxies]]
-name = "your-tool"
-type = "http"
-localIP = "127.0.0.1"
-localPort = 3000
-customDomains = ["your-tool.aim888888.xyz"]</pre></div>
-    </section>
-  </main>
-</div>
+PORTAL_PAGE_HTML = _fill(r'''
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Tool Nexus Portal</title><style>:root{--navy:#062443;--navy2:#0e3762;--bg:#f6f8fc;--side:#f0f3f8;--line:#e6ebf2;--text:#0b223d;--muted:#748296;--green:#16a34a;--red:#dc2626;--shadow:0 18px 48px rgba(6,36,67,.08)}*{box-sizing:border-box}body{margin:0;min-height:100vh;background:var(--bg);color:var(--text);font-family:"Microsoft YaHei","PingFang SC","Noto Sans SC","Segoe UI",sans-serif}button,input,select{font:inherit}a{color:inherit;text-decoration:none}.topbar{height:72px;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 30px;box-shadow:0 10px 30px rgba(6,36,67,.18);position:sticky;top:0;z-index:20}.brand{display:flex;align-items:center;gap:12px;font-weight:900;font-size:20px}.brand-mark{width:34px;height:34px;border-radius:10px;background:#dbeafe;color:var(--navy);display:grid;place-items:center;font-weight:900}.top-actions{display:flex;align-items:center;gap:12px}.top-link{font-weight:800;padding:10px 8px;border-bottom:2px solid transparent}.top-link.active{border-color:#fff}.btn{border:0;border-radius:14px;padding:12px 18px;font-weight:900;cursor:pointer}.btn-primary{background:var(--navy);color:#fff;box-shadow:0 14px 28px rgba(6,36,67,.18)}.btn-soft{background:#f1f5f9;color:var(--navy)}.user-chip{display:flex;align-items:center;gap:10px;padding:9px 14px;border-radius:14px;background:rgba(255,255,255,.1);font-weight:800}.avatar{width:36px;height:36px;border-radius:999px;background:#bfdbfe;color:var(--navy);display:grid;place-items:center;font-weight:900}.layout{display:grid;grid-template-columns:320px 1fr;min-height:calc(100vh - 72px)}.sidebar{background:var(--side);border-right:1px solid var(--line);padding:28px 16px;display:flex;flex-direction:column;justify-content:space-between}.profile-head{display:flex;align-items:center;gap:14px;padding:4px 12px 24px}.profile-head .avatar{width:58px;height:58px;box-shadow:var(--shadow)}.profile-head h3{margin:0 0 4px;font-size:18px}.profile-head p{margin:0;color:var(--muted);font-size:13px}.menu{display:grid;gap:10px}.menu button{width:100%;display:flex;align-items:center;gap:12px;border:0;border-radius:12px;padding:15px 18px;background:transparent;color:#334b63;font-weight:900;text-align:left;cursor:pointer}.menu button.active{background:var(--navy2);color:#fff;box-shadow:0 12px 26px rgba(6,36,67,.18)}.num{width:24px;opacity:.75}.hint-card{margin:20px 10px 0;border:1px solid #d9e1ec;border-radius:18px;padding:16px;color:#526174;background:#eef2f7;font-size:13px;line-height:1.7}.content{padding:42px min(56px,4vw)}.hero{display:flex;align-items:flex-start;justify-content:space-between;gap:24px;margin-bottom:30px}.eyebrow{color:#8392a7;font-weight:900;letter-spacing:.22em;font-size:12px;margin-bottom:8px}h1{margin:0;color:var(--navy);font-size:clamp(34px,4vw,56px);line-height:1;letter-spacing:-.05em;font-family:Georgia,"Microsoft YaHei",serif}.subtitle{margin:12px 0 0;color:#526174;font-weight:700}.stats{display:flex;gap:16px;flex-wrap:wrap}.stat{min-width:160px;background:#fff;border-radius:26px;padding:18px 22px;box-shadow:var(--shadow);display:flex;align-items:center;gap:14px}.stat-icon{width:52px;height:52px;border-radius:18px;background:#f1f5f9;display:grid;place-items:center;color:var(--navy);font-weight:900}.stat small{color:#8794a8;font-weight:900}.stat strong{display:block;margin-top:4px;color:var(--navy);font-size:28px}.section{display:none}.section.active{display:block}.grid{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(420px,.9fr);gap:24px;align-items:start}.panel{background:#fff;border:1px solid var(--line);border-radius:28px;box-shadow:var(--shadow);padding:28px}.panel-head{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:22px}.panel-title{display:flex;align-items:flex-start;gap:12px}.bar{width:6px;height:30px;border-radius:99px;background:var(--navy);margin-top:3px}h2{margin:0;color:var(--navy);font-size:24px;font-family:Georgia,"Microsoft YaHei",serif}.muted{color:var(--muted);font-size:13px;line-height:1.65}.project-list,.user-list{display:grid;gap:14px}.project{display:grid;grid-template-columns:1fr auto;gap:18px;align-items:center;padding:18px 20px;border:1px solid var(--line);border-radius:22px;background:#fff;box-shadow:0 8px 22px rgba(6,36,67,.04)}.project h3{margin:0 0 6px;color:var(--navy);font-size:18px}.host{color:#8492a6;font-size:13px}.tags{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.tag{border-radius:999px;padding:6px 10px;background:#eef2f7;color:#526174;font-size:12px;font-weight:900}.tag.green{background:#dcfce7;color:#166534}.tag.red{background:#fee2e2;color:#991b1b}.tag.blue{background:#dbeafe;color:#1e40af}form{display:grid;gap:14px}label{display:grid;gap:8px;color:#7b89a0;font-weight:900;font-size:12px;letter-spacing:.04em}input,select{width:100%;border:0;border-bottom:2px solid #c8d1de;background:transparent;padding:13px 4px;color:#172033;outline:none}input:focus,select:focus{border-color:var(--navy)}.row{display:grid;grid-template-columns:1fr 1fr;gap:16px}.whitelist{border:1px solid var(--line);background:#fbfcfe;border-radius:18px;padding:16px}.check-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-top:12px}.check{display:flex;align-items:center;gap:9px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px;color:#223955;font-weight:800}.check input{width:auto}.notice{min-height:20px;color:var(--muted);font-size:13px}.notice.error{color:var(--red)}.notice.success{color:#15803d}.config{background:var(--navy);color:#dbeafe;border-radius:18px;padding:18px;overflow:auto;font:12px/1.65 Consolas,"Cascadia Mono",monospace}.user-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border:1px solid var(--line);border-radius:16px;background:#f8fafc}.empty{border:1px dashed #c8d1de;border-radius:20px;padding:24px;color:var(--muted);background:#fbfcfe}.hidden{display:none!important}@media(max-width:1120px){.layout{grid-template-columns:1fr}.sidebar{display:none}.hero{flex-direction:column}.grid{grid-template-columns:1fr}}@media(max-width:680px){.topbar{padding:0 16px}.content{padding:26px 16px}.row,.project{grid-template-columns:1fr}.top-link{display:none}}</style></head><body>
+<header class="topbar"><div class="brand"><span class="brand-mark">TN</span><span>Tool Nexus @brand</span></div><nav class="top-actions"><a class="top-link active" href="/">@home</a><button id="refreshButton" class="btn btn-soft">@refresh</button><button id="logoutButton" class="btn btn-soft hidden">@logout</button><a id="loginLink" href="/login"><button class="btn btn-soft" type="button">@login</button></a><div class="user-chip"><span class="avatar" id="avatarText">TN</span><span id="topUser">@unlogged</span></div></nav></header>
+<div class="layout"><aside class="sidebar"><div><div class="profile-head"><div class="avatar" id="sideAvatar">TN</div><div><h3 id="sideUser">@unlogged</h3><p id="sideRole">Tool Nexus @user</p></div></div><div class="menu"><button class="active" data-section="projects"><span class="num">01</span>@project_center</button><button data-section="create"><span class="num">02</span>@new_tool</button><button data-section="profile"><span class="num">03</span>@profile</button><button data-section="users" data-admin-only="1"><span class="num">04</span>@user_admin</button></div></div><div class="hint-card"><strong>@system_tip</strong><br>@tip</div></aside><main class="content"><section class="hero"><div><div class="eyebrow">INTERNAL TOOL PORTAL</div><h1>@hero</h1><p class="subtitle">@hero_sub</p></div><div class="stats"><div class="stat"><div class="stat-icon">P</div><div><small>@project_count</small><strong id="projectCount">0</strong></div></div><div class="stat"><div class="stat-icon">U</div><div><small>@user_count</small><strong id="userCount">0</strong></div></div></div></section>
+<section id="section-projects" class="section active"><div class="panel"><div class="panel-head"><div class="panel-title"><span class="bar"></span><div><h2>@project_list</h2><p class="muted">@project_help</p></div></div></div><div id="projectList" class="project-list"></div><div id="projectEmpty" class="empty hidden">@no_projects</div></div></section>
+<section id="section-create" class="section"><div class="grid"><div class="panel"><div class="panel-head"><div class="panel-title"><span class="bar"></span><div><h2>@new_web_tool</h2><p class="muted">@new_help</p></div></div></div><form id="projectForm"><label>@tool_name<input id="projectName" placeholder="image converter" required></label><div class="row"><label>@subdomain<input id="projectSubdomain" placeholder="image-tool" required pattern="[a-z0-9-]+"></label><label>@visibility<select id="projectVisibility"><option value="true">@private</option><option value="false">@public</option></select></label></div><div id="whitelistBox" class="whitelist"><strong>@whitelist</strong><p class="muted">@whitelist_help</p><div id="whitelistUsers" class="check-grid"></div></div><button class="btn btn-primary" type="submit">@create_project</button><div id="formNotice" class="notice"></div></form></div><div class="panel"><div class="panel-head"><div class="panel-title"><span class="bar"></span><div><h2>@client_snippet</h2><p class="muted">@client_help</p></div></div></div><pre id="configPreview" class="config">customDomains will appear here after creating a project.</pre></div></div></section>
+<section id="section-profile" class="section"><div class="panel"><div class="panel-head"><div class="panel-title"><span class="bar"></span><div><h2>@profile</h2><p class="muted">@profile_help</p></div></div></div><form id="profileForm"><div class="row"><label>@username<input id="profileUsername" required></label><label>@nickname<input id="profileNickname" required></label></div><label>@new_password<input id="profilePassword" type="password" minlength="6" placeholder="Leave blank to keep current password"></label><button class="btn btn-primary" type="submit">@save</button><div id="profileNotice" class="notice"></div></form></div></section>
+<section id="section-users" class="section"><div class="panel"><div class="panel-head"><div class="panel-title"><span class="bar"></span><div><h2>@user_admin</h2><p class="muted">@user_admin_help</p></div></div></div><form id="userForm"><div class="row"><label>@username<input id="newUsername" placeholder="lisi" required></label><label>@nickname<input id="newNickname" placeholder="Lisi"></label></div><label>@initial_password<input id="newPassword" type="password" minlength="6" required></label><label class="check"><input id="newIsAdmin" type="checkbox">@set_admin</label><button class="btn btn-primary" type="submit">@add_user</button><div id="userNotice" class="notice"></div></form><div id="userList" class="user-list" style="margin-top:18px"></div></div></section></main></div>
 <script>
-const state = { authenticated:false, user:null, projects:[], users:[] };
-const $ = (id) => document.getElementById(id);
-function escapeHtml(value){ return String(value).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
-function initials(name){ return (name || 'TN').slice(0,2).toUpperCase(); }
-function setNotice(el,msg,kind=''){ el.textContent = msg || ''; el.className = 'notice' + (kind ? ' ' + kind : ''); }
-async function fetchJson(url,opt={}){ const headers = opt.body ? {'Content-Type':'application/json', ...(opt.headers||{})} : (opt.headers||{}); const r = await fetch(url,{credentials:'include',...opt,headers}); const t = await r.text(); let p=null; try{p=t?JSON.parse(t):null}catch{p={message:t}} if(!r.ok) throw new Error(p?.detail || p?.message || 'Request failed'); return p; }
-function switchSection(name){ document.querySelectorAll('.section').forEach(s=>s.classList.remove('active')); document.getElementById('section-'+name)?.classList.add('active'); document.querySelectorAll('.menu button').forEach(b=>b.classList.toggle('active', b.dataset.section===name)); }
-document.querySelectorAll('.menu button').forEach(btn => btn.onclick = () => switchSection(btn.dataset.section));
-function renderSession(){ const logged = state.authenticated && state.user; $('loginLink').classList.toggle('hidden', logged); $('logoutButton').classList.toggle('hidden', !logged); const name = logged ? state.user.username : '未登录'; $('topUser').textContent=name; $('sideUser').textContent=name; $('avatarText').textContent=initials(name); $('sideAvatar').textContent=initials(name); $('sideRole').textContent = logged && state.user.is_admin ? '管理员' : 'Tool Nexus 用户'; $('profileUsername').value = logged ? state.user.username : ''; document.querySelectorAll('[data-admin-only="1"]').forEach(el=>el.classList.toggle('hidden', !(logged && state.user.is_admin))); $('whitelistBox').classList.toggle('hidden', !(logged && state.user.is_admin) || $('projectVisibility').value !== 'true'); }
-function accessLabel(v){ return v === 'owner' ? 'Owner' : v === 'shared' ? 'Whitelist' : v === 'public' ? 'Public' : v === 'admin' ? 'Admin' : v; }
-function renderProjects(){ $('projectCount').textContent = state.projects.length; $('projectList').innerHTML=''; $('projectEmpty').classList.toggle('hidden', state.projects.length > 0); for(const p of state.projects){ const host = p.subdomain + '.aim888888.xyz'; const granted = (p.granted_users||[]).map(u=>escapeHtml(u.username)).join(', ') || 'None'; const card = document.createElement('article'); card.className='project'; card.innerHTML = `<div><h3>${escapeHtml(p.name)}</h3><div class="host">${host}</div><div class="tags"><span class="tag blue">${accessLabel(p.access_type)}</span><span class="tag ${p.is_private?'red':'green'}">${p.is_private?'Private':'Public'}</span><span class="tag">Owner: ${escapeHtml(p.owner_username)}</span><span class="tag">Whitelist: ${granted}</span></div></div><a class="btn btn-soft" href="https://${host}" target="_blank">打开</a>`; $('projectList').appendChild(card); } }
-function renderUsers(){ $('userCount').textContent = state.users.length || (state.user ? 1 : 0); $('userList').innerHTML=''; $('whitelistUsers').innerHTML=''; for(const u of state.users){ const row=document.createElement('div'); row.className='user'; row.innerHTML = `<strong>${escapeHtml(u.username)}</strong><span class="muted">ID ${u.id}${u.is_admin?' ADMIN':''}</span>`; $('userList').appendChild(row); if(state.user && u.id !== state.user.id){ const lab=document.createElement('label'); lab.className='check'; lab.innerHTML=`<input type="checkbox" value="${u.id}"><span>${escapeHtml(u.username)}</span>`; $('whitelistUsers').appendChild(lab); } } if(!$('whitelistUsers').children.length) $('whitelistUsers').innerHTML='<p class="muted">暂无其他用户。</p>'; }
-function renderVisibility(){ $('whitelistBox').classList.toggle('hidden', !(state.user && state.user.is_admin) || $('projectVisibility').value !== 'true'); }
-async function loadSession(){ const s=await fetchJson('/api/me'); state.authenticated=s.authenticated; state.user=s.user; renderSession(); }
-async function loadUsers(){ if(!(state.authenticated && state.user && state.user.is_admin)){ state.users=[]; renderUsers(); return; } state.users=await fetchJson('/api/users'); renderUsers(); }
-async function loadProjects(){ if(!state.authenticated) return; state.projects=await fetchJson('/api/my-projects'); renderProjects(); }
-async function reloadAll(){ await loadSession(); if(!state.authenticated){ location.href='/login'; return; } await loadUsers(); await loadProjects(); }
-$('refreshButton').onclick = () => reloadAll().catch(e=>setNotice($('formNotice'), e.message, 'error'));
-$('logoutButton').onclick = async () => { await fetchJson('/api/logout',{method:'POST'}); location.href='/login'; };
-$('projectVisibility').onchange = renderVisibility;
-$('projectForm').onsubmit = async (e) => { e.preventDefault(); const sub=$('projectSubdomain').value.trim().toLowerCase(); const isPrivate=$('projectVisibility').value==='true'; const ids=(state.user && state.user.is_admin && isPrivate) ? [...$('whitelistUsers').querySelectorAll('input:checked')].map(i=>Number(i.value)) : []; try{ await fetchJson('/api/projects',{method:'POST',body:JSON.stringify({name:$('projectName').value.trim(), subdomain:sub, is_private:isPrivate, whitelist_user_ids:ids})}); setNotice($('formNotice'),'项目已创建。','success'); $('configPreview').textContent = `serverAddr = "frp.aim888888.xyz"\nserverPort = 7000\nauth.token = "请向管理员索取"\ntransport.tls.enable = true\n\n[[proxies]]\nname = "${sub}"\ntype = "http"\nlocalIP = "127.0.0.1"\nlocalPort = 3000\ncustomDomains = ["${sub}.aim888888.xyz"]`; e.target.reset(); renderVisibility(); await loadProjects(); } catch(err){ setNotice($('formNotice'),err.message,'error'); } };
-$('userForm').onsubmit = async (e) => { e.preventDefault(); try{ await fetchJson('/api/users',{method:'POST',body:JSON.stringify({username:$('newUsername').value.trim(), password:$('newPassword').value, is_admin:$('newIsAdmin').checked})}); setNotice($('userNotice'),'用户已创建。','success'); e.target.reset(); await loadUsers(); } catch(err){ setNotice($('userNotice'),err.message,'error'); } };
-$('profileForm').onsubmit = async (e) => { e.preventDefault(); const body={username:$('profileUsername').value.trim()}; if($('profilePassword').value) body.password=$('profilePassword').value; try{ const u=await fetchJson('/api/users/me',{method:'PATCH',body:JSON.stringify(body)}); state.user=u; $('profilePassword').value=''; renderSession(); setNotice($('profileNotice'),'资料已更新。','success'); await loadProjects(); } catch(err){ setNotice($('profileNotice'),err.message,'error'); } };
-renderVisibility(); reloadAll().catch(e=>setNotice($('formNotice'), e.message, 'error'));
-</script>
-</body>
-</html>
-"""
+const I18N={unlogged:'@unlogged',admin:'@admin',normalUser:'Tool Nexus @user',open:'@open',noOtherUsers:'@no_other_users',created:'@project_created',userCreated:'@user_created',profileUpdated:'@profile_updated',askToken:'@ask_token'};
+const state={authenticated:false,user:null,projects:[],users:[]};const $=(id)=>document.getElementById(id);
+function escapeHtml(v){return String(v).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+function displayName(u){return u&&(u.nickname||u.username)||''}function initials(n){return(n||'TN').slice(0,2).toUpperCase()}function setNotice(el,msg,kind=''){el.textContent=msg||'';el.className='notice'+(kind?' '+kind:'')}
+async function fetchJson(url,opt={}){const h=opt.body?{'Content-Type':'application/json',...(opt.headers||{})}:(opt.headers||{});const r=await fetch(url,{credentials:'include',...opt,headers:h});const t=await r.text();let p=null;try{p=t?JSON.parse(t):null}catch{p={message:t}}if(!r.ok)throw new Error(p?.detail||p?.message||'Request failed');return p}
+function switchSection(name){document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));document.getElementById('section-'+name)?.classList.add('active');document.querySelectorAll('.menu button').forEach(b=>b.classList.toggle('active',b.dataset.section===name))}
+document.querySelectorAll('.menu button').forEach(btn=>btn.onclick=()=>switchSection(btn.dataset.section));
+function renderSession(){const logged=state.authenticated&&state.user;$('loginLink').classList.toggle('hidden',logged);$('logoutButton').classList.toggle('hidden',!logged);const name=logged?displayName(state.user):I18N.unlogged;$('topUser').textContent=name;$('sideUser').textContent=name;$('avatarText').textContent=initials(name);$('sideAvatar').textContent=initials(name);$('sideRole').textContent=logged&&state.user.is_admin?I18N.admin:I18N.normalUser;$('profileUsername').value=logged?state.user.username:'';$('profileNickname').value=logged?displayName(state.user):'';document.querySelectorAll('[data-admin-only="1"]').forEach(el=>el.classList.toggle('hidden',!(logged&&state.user.is_admin)));$('whitelistBox').classList.toggle('hidden',!(logged&&state.user.is_admin)||$('projectVisibility').value!=='true')}
+function accessLabel(v){return v==='owner'?'Owner':v==='shared'?'Whitelist':v==='public'?'Public':v==='admin'?'Admin':v}
+function renderProjects(){$('projectCount').textContent=state.projects.length;$('projectList').innerHTML='';$('projectEmpty').classList.toggle('hidden',state.projects.length>0);for(const p of state.projects){const host=p.subdomain+'.aim888888.xyz';const granted=(p.granted_users||[]).map(u=>escapeHtml(displayName(u))).join(', ')||'None';const owner=escapeHtml(p.owner_nickname||p.owner_username);const card=document.createElement('article');card.className='project';card.innerHTML=`<div><h3>${escapeHtml(p.name)}</h3><div class="host">${host}</div><div class="tags"><span class="tag blue">${accessLabel(p.access_type)}</span><span class="tag ${p.is_private?'red':'green'}">${p.is_private?'Private':'Public'}</span><span class="tag">Owner: ${owner}</span><span class="tag">Whitelist: ${granted}</span></div></div><a class="btn btn-soft" href="https://${host}" target="_blank">${I18N.open}</a>`;$('projectList').appendChild(card)}}
+function renderUsers(){$('userCount').textContent=state.users.length||(state.user?1:0);$('userList').innerHTML='';$('whitelistUsers').innerHTML='';for(const u of state.users){const row=document.createElement('div');row.className='user-row';row.innerHTML=`<strong>${escapeHtml(displayName(u))}</strong><span class="muted">${escapeHtml(u.username)} - ID ${u.id}${u.is_admin?' - ADMIN':''}</span>`;$('userList').appendChild(row);if(state.user&&u.id!==state.user.id){const lab=document.createElement('label');lab.className='check';lab.innerHTML=`<input type="checkbox" value="${u.id}"><span>${escapeHtml(displayName(u))}</span>`;$('whitelistUsers').appendChild(lab)}}if(!$('whitelistUsers').children.length)$('whitelistUsers').innerHTML='<p class="muted">'+I18N.noOtherUsers+'</p>'}
+function renderVisibility(){$('whitelistBox').classList.toggle('hidden',!(state.user&&state.user.is_admin)||$('projectVisibility').value!=='true')}
+async function loadSession(){const s=await fetchJson('/api/me');state.authenticated=s.authenticated;state.user=s.user;renderSession()}async function loadUsers(){if(!(state.authenticated&&state.user&&state.user.is_admin)){state.users=[];renderUsers();return}state.users=await fetchJson('/api/users');renderUsers()}async function loadProjects(){if(!state.authenticated)return;state.projects=await fetchJson('/api/my-projects');renderProjects()}async function reloadAll(){await loadSession();if(!state.authenticated){location.href='/login';return}await loadUsers();await loadProjects()}
+$('refreshButton').onclick=()=>reloadAll().catch(e=>setNotice($('formNotice'),e.message,'error'));$('logoutButton').onclick=async()=>{await fetchJson('/api/logout',{method:'POST'});location.href='/login'};$('projectVisibility').onchange=renderVisibility;
+$('projectForm').onsubmit=async(e)=>{e.preventDefault();const sub=$('projectSubdomain').value.trim().toLowerCase();const isPrivate=$('projectVisibility').value==='true';const ids=(state.user&&state.user.is_admin&&isPrivate)?[...$('whitelistUsers').querySelectorAll('input:checked')].map(i=>Number(i.value)):[];try{await fetchJson('/api/projects',{method:'POST',body:JSON.stringify({name:$('projectName').value.trim(),subdomain:sub,is_private:isPrivate,whitelist_user_ids:ids})});setNotice($('formNotice'),I18N.created,'success');$('configPreview').textContent=`serverAddr = "frp.aim888888.xyz"\nserverPort = 7000\nauth.token = "${I18N.askToken}"\ntransport.tls.enable = true\n\n[[proxies]]\nname = "${sub}"\ntype = "http"\nlocalIP = "127.0.0.1"\nlocalPort = 3000\ncustomDomains = ["${sub}.aim888888.xyz"]`;e.target.reset();renderVisibility();await loadProjects()}catch(err){setNotice($('formNotice'),err.message,'error')}};
+$('userForm').onsubmit=async(e)=>{e.preventDefault();try{await fetchJson('/api/users',{method:'POST',body:JSON.stringify({username:$('newUsername').value.trim(),nickname:$('newNickname').value.trim(),password:$('newPassword').value,is_admin:$('newIsAdmin').checked})});setNotice($('userNotice'),I18N.userCreated,'success');e.target.reset();await loadUsers()}catch(err){setNotice($('userNotice'),err.message,'error')}};
+$('profileForm').onsubmit=async(e)=>{e.preventDefault();const body={username:$('profileUsername').value.trim(),nickname:$('profileNickname').value.trim()};if($('profilePassword').value)body.password=$('profilePassword').value;try{const u=await fetchJson('/api/users/me',{method:'PATCH',body:JSON.stringify(body)});state.user=u;$('profilePassword').value='';renderSession();setNotice($('profileNotice'),I18N.profileUpdated,'success');await loadProjects()}catch(err){setNotice($('profileNotice'),err.message,'error')}};renderVisibility();reloadAll().catch(e=>setNotice($('formNotice'),e.message,'error'));
+</script></body></html>
+''', _ZH)
 
-LOGIN_PAGE_HTML = """
-<!doctype html>
-<html lang="zh-CN">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Tool Nexus Login</title>
-  <style>
-    :root { --navy:#062443; --bg:#f7f9fd; --muted:#637083; --line:#e6ebf2; --shadow:0 24px 70px rgba(6,36,67,.1); }
-    * { box-sizing:border-box; }
-    body { margin:0; min-height:100vh; font-family:"Microsoft YaHei","PingFang SC","Noto Sans SC","Segoe UI",sans-serif; color:var(--navy); background:linear-gradient(90deg,#f8fafc 0%,#f8fafc 58%,#eef2f8 58%,#eef2f8 100%); }
-    a { color:inherit; text-decoration:none; }
-    .top { height:72px; display:flex; align-items:center; justify-content:space-between; padding:0 42px; background:#fff; border-bottom:1px solid var(--line); }
-    .brand { font-size:20px; font-weight:900; }
-    .links { display:flex; gap:34px; font-weight:900; }
-    .wrap { min-height:calc(100vh - 72px); display:grid; grid-template-columns:1.15fr .85fr; align-items:center; gap:40px; width:min(1360px,calc(100% - 64px)); margin:0 auto; }
-    .hero small { display:inline-flex; letter-spacing:.28em; color:#91a4bd; font-weight:900; background:#edf2f8; border-radius:999px; padding:8px 18px; }
-    .hero h1 { font-family:Georgia,"Microsoft YaHei",serif; font-size:clamp(58px,7vw,92px); line-height:.95; margin:30px 0 18px; letter-spacing:-.06em; }
-    .hero p { font-size:20px; line-height:1.7; color:#516071; max-width:720px; }
-    .stats { display:flex; gap:24px; margin-top:50px; }
-    .stat { min-width:220px; background:#fff; border-radius:24px; padding:28px 32px; box-shadow:0 18px 45px rgba(6,36,67,.08); }
-    .stat strong { display:block; font-size:38px; margin-top:10px; }
-    .stat.dark { background:var(--navy); color:#fff; }
-    .card { background:#fff; border-radius:34px; padding:44px 48px; box-shadow:var(--shadow); }
-    h2 { font-size:28px; margin:0 0 8px; font-family:Georgia,"Microsoft YaHei",serif; }
-    .muted { color:var(--muted); }
-    .roles { display:grid; grid-template-columns:repeat(2,1fr); gap:14px; margin:24px 0 34px; }
-    .role { border:2px solid var(--line); border-radius:18px; padding:22px 10px; text-align:center; font-weight:900; cursor:pointer; background:#fff; }
-    .role.active { border-color:var(--navy); background:#f4f7fb; }
-    label { display:grid; gap:8px; margin:18px 0; color:#9aabc0; font-size:12px; font-weight:900; letter-spacing:.08em; }
-    input { border:0; border-bottom:2px solid #c8d1de; padding:14px 2px; font-size:17px; outline:none; }
-    input:focus { border-color:var(--navy); }
-    button.login { width:100%; border:0; border-radius:18px; background:var(--navy); color:#fff; padding:17px; font-size:16px; font-weight:900; margin-top:22px; cursor:pointer; box-shadow:0 16px 26px rgba(6,36,67,.18); }
-    .notice { min-height:22px; margin-top:14px; color:var(--muted); }
-    .notice.error { color:#b91c1c; } .notice.success { color:#15803d; }
-    .back { display:inline-block; margin-top:18px; font-weight:900; }
-    @media(max-width:980px){ .wrap{grid-template-columns:1fr;padding:30px 0}.stats{flex-direction:column}.top{padding:0 18px}.links{display:none} }
-  </style>
-</head>
-<body>
-<header class="top"><div class="brand">TN Tool Nexus 内部工具网关</div><nav class="links"><a href="/">首页</a><a>指南</a><a>公告</a><a>关于</a></nav></header>
-<main class="wrap">
-  <section class="hero"><small>INTERNAL TOOL GATEWAY</small><h1>统一接入<br>权限可控</h1><p>通过 Portal 管理团队网页工具、用户白名单和 FRP 子域名接入。</p><div class="stats"><div class="stat">FRP<strong>7000</strong></div><div class="stat dark">SSO<strong>ON</strong></div></div></section>
-  <section class="card"><h2>身份登录</h2><p class="muted">登录后可访问已授权的工具。</p><div class="roles"><button type="button" class="role active" data-role="user">用户</button><button type="button" class="role" data-role="admin">管理员</button></div><form id="loginForm"><label>ACCOUNT / 账号<input id="username" value="zhangsan" required></label><label>PASSWORD / 密码<input id="password" type="password" value="zhangsan123" required></label><button class="login" type="submit">立即登录</button><div id="notice" class="notice"></div></form><a class="back" href="/">返回门户首页</a></section>
-</main>
-<script>
-let selectedRole = 'user';
-const params = new URLSearchParams(location.search);
-const nextUrl = params.get('next') || '/';
-const notice = document.getElementById('notice');
-function setNotice(msg, kind=''){ notice.textContent = msg || ''; notice.className = 'notice' + (kind ? ' ' + kind : ''); }
-async function fetchJson(url,opt={}){ const r=await fetch(url,{credentials:'include',headers:{'Content-Type':'application/json'},...opt}); const t=await r.text(); let p=null; try{p=t?JSON.parse(t):null}catch{p={message:t}} if(!r.ok) throw new Error(p?.detail || p?.message || 'Request failed'); return p; }
-document.querySelectorAll('.role').forEach(btn => btn.onclick = () => { selectedRole = btn.dataset.role; document.querySelectorAll('.role').forEach(x=>x.classList.toggle('active', x===btn)); });
-document.getElementById('loginForm').onsubmit = async (e) => { e.preventDefault(); try{ setNotice('登录中...'); const data = await fetchJson('/api/login',{method:'POST',body:JSON.stringify({username:document.getElementById('username').value.trim(), password:document.getElementById('password').value})}); if(selectedRole === 'admin' && !data.user.is_admin){ await fetchJson('/api/logout',{method:'POST'}); setNotice('该账号不是管理员。','error'); return; } setNotice('登录成功。','success'); location.href = nextUrl; } catch(err){ setNotice(err.message,'error'); } };
-</script>
-</body>
-</html>
-"""
+_LOGIN_ZH = {
+    "brand": _ZH["brand"], "home": _ZH["home"],
+    "guide": _u(r"\u6307\u5357"), "notice": _u(r"\u516c\u544a"), "about": _u(r"\u5173\u4e8e"),
+    "hero1": _u(r"\u7edf\u4e00\u63a5\u5165"), "hero2": _u(r"\u6743\u9650\u53ef\u63a7"),
+    "subtitle": _u(r"\u901a\u8fc7 Portal \u7ba1\u7406\u56e2\u961f\u7f51\u9875\u5de5\u5177\u3001\u7528\u6237\u767d\u540d\u5355\u548c FRP \u5b50\u57df\u540d\u63a5\u5165\u3002"),
+    "login_title": _u(r"\u8eab\u4efd\u767b\u5f55"), "register_title": _u(r"\u9080\u8bf7\u6ce8\u518c"),
+    "login_help": _u(r"\u767b\u5f55\u540e\u53ef\u8bbf\u95ee\u5df2\u6388\u6743\u7684\u5de5\u5177\u3002"),
+    "register_help": _u(r"\u4f7f\u7528\u7ba1\u7406\u5458\u53d1\u653e\u7684\u9080\u8bf7\u7801\u521b\u5efa\u666e\u901a\u7528\u6237\u3002"),
+    "login": _ZH["login"], "register": _ZH["register"], "user": _ZH["user"], "admin": _ZH["admin"],
+    "username": _u(r"\u8d26\u53f7"), "nickname": _ZH["nickname"], "password": _u(r"\u5bc6\u7801"), "invite": _u(r"\u9080\u8bf7\u7801"),
+    "login_now": _u(r"\u7acb\u5373\u767b\u5f55"), "register_now": _u(r"\u7acb\u5373\u6ce8\u518c"), "back": _u(r"\u8fd4\u56de\u95e8\u6237\u9996\u9875"),
+    "signing": _u(r"\u767b\u5f55\u4e2d..."), "registering": _u(r"\u6ce8\u518c\u4e2d..."), "not_admin": _u(r"\u8be5\u8d26\u53f7\u4e0d\u662f\u7ba1\u7406\u5458\u3002"), "login_success": _u(r"\u767b\u5f55\u6210\u529f\u3002"), "register_success": _u(r"\u6ce8\u518c\u6210\u529f\u3002"),
+}
+
+LOGIN_PAGE_HTML = _fill(r'''
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Tool Nexus Login</title><style>:root{--navy:#062443;--muted:#637083;--line:#e6ebf2;--shadow:0 24px 70px rgba(6,36,67,.1)}*{box-sizing:border-box}body{margin:0;min-height:100vh;font-family:"Microsoft YaHei","PingFang SC","Noto Sans SC","Segoe UI",sans-serif;color:var(--navy);background:linear-gradient(90deg,#f8fafc 0%,#f8fafc 58%,#eef2f8 58%,#eef2f8 100%)}a{color:inherit;text-decoration:none}.top{height:72px;display:flex;align-items:center;justify-content:space-between;padding:0 42px;background:#fff;border-bottom:1px solid var(--line)}.brand{font-size:20px;font-weight:900}.links{display:flex;gap:34px;font-weight:900}.wrap{min-height:calc(100vh - 72px);display:grid;grid-template-columns:1.15fr .85fr;align-items:center;gap:40px;width:min(1360px,calc(100% - 64px));margin:0 auto}.hero small{display:inline-flex;letter-spacing:.28em;color:#91a4bd;font-weight:900;background:#edf2f8;border-radius:999px;padding:8px 18px}.hero h1{font-family:Georgia,"Microsoft YaHei",serif;font-size:clamp(58px,7vw,92px);line-height:.95;margin:30px 0 18px;letter-spacing:-.06em}.hero p{font-size:20px;line-height:1.7;color:#516071;max-width:720px}.stats{display:flex;gap:24px;margin-top:50px}.stat{min-width:220px;background:#fff;border-radius:24px;padding:28px 32px;box-shadow:0 18px 45px rgba(6,36,67,.08)}.stat strong{display:block;font-size:38px;margin-top:10px}.stat.dark{background:var(--navy);color:#fff}.card{background:#fff;border-radius:34px;padding:44px 48px;box-shadow:var(--shadow)}h2{font-size:28px;margin:0 0 8px;font-family:Georgia,"Microsoft YaHei",serif}.muted{color:var(--muted)}.mode{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:22px 0}.mode button,.role{border:2px solid var(--line);border-radius:18px;padding:16px 10px;text-align:center;font-weight:900;cursor:pointer;background:#fff}.mode button.active,.role.active{border-color:var(--navy);background:#f4f7fb}.roles{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin:14px 0 20px}label{display:grid;gap:8px;margin:16px 0;color:#9aabc0;font-size:12px;font-weight:900;letter-spacing:.08em}input{border:0;border-bottom:2px solid #c8d1de;padding:14px 2px;font-size:17px;outline:none}input:focus{border-color:var(--navy)}button.login{width:100%;border:0;border-radius:18px;background:var(--navy);color:#fff;padding:17px;font-size:16px;font-weight:900;margin-top:22px;cursor:pointer;box-shadow:0 16px 26px rgba(6,36,67,.18)}.notice{min-height:22px;margin-top:14px;color:var(--muted)}.notice.error{color:#b91c1c}.notice.success{color:#15803d}.back{display:inline-block;margin-top:18px;font-weight:900}.hidden{display:none!important}@media(max-width:980px){.wrap{grid-template-columns:1fr;padding:30px 0}.stats{flex-direction:column}.top{padding:0 18px}.links{display:none}}</style></head><body><header class="top"><div class="brand">TN Tool Nexus @brand</div><nav class="links"><a href="/">@home</a><a>@guide</a><a>@notice</a><a>@about</a></nav></header><main class="wrap"><section class="hero"><small>INTERNAL TOOL GATEWAY</small><h1>@hero1<br>@hero2</h1><p>@subtitle</p><div class="stats"><div class="stat">FRP<strong>7000</strong></div><div class="stat dark">SSO<strong>ON</strong></div></div></section><section class="card"><h2 id="cardTitle">@login_title</h2><p class="muted">@login_help</p><div class="mode"><button id="loginMode" class="active" type="button">@login</button><button id="registerMode" type="button">@register</button></div><form id="loginForm"><div id="roleBlock" class="roles"><button type="button" class="role active" data-role="user">@user</button><button type="button" class="role" data-role="admin">@admin</button></div><label>ACCOUNT / @username<input id="username" value="zhangsan" required></label><label id="nicknameRow" class="hidden">@nickname<input id="nickname"></label><label>PASSWORD / @password<input id="password" type="password" value="zhangsan123" required></label><label id="inviteRow" class="hidden">@invite<input id="inviteCode"></label><button class="login" id="submitButton" type="submit">@login_now</button><div id="notice" class="notice"></div></form><a class="back" href="/">@back</a></section></main><script>let selectedRole='user';let mode='login';const params=new URLSearchParams(location.search);const nextUrl=params.get('next')||'/';const notice=document.getElementById('notice');const txt={loginTitle:'@login_title',registerTitle:'@register_title',loginHelp:'@login_help',registerHelp:'@register_help',loginNow:'@login_now',registerNow:'@register_now',signing:'@signing',registering:'@registering',notAdmin:'@not_admin',loginSuccess:'@login_success',registerSuccess:'@register_success'};function setNotice(msg,kind=''){notice.textContent=msg||'';notice.className='notice'+(kind?' '+kind:'')}async function fetchJson(url,opt={}){const r=await fetch(url,{credentials:'include',headers:{'Content-Type':'application/json'},...opt});const t=await r.text();let p=null;try{p=t?JSON.parse(t):null}catch{p={message:t}}if(!r.ok)throw new Error(p?.detail||p?.message||'Request failed');return p}function setMode(next){mode=next;document.getElementById('loginMode').classList.toggle('active',mode==='login');document.getElementById('registerMode').classList.toggle('active',mode==='register');document.getElementById('roleBlock').classList.toggle('hidden',mode==='register');document.getElementById('nicknameRow').classList.toggle('hidden',mode==='login');document.getElementById('inviteRow').classList.toggle('hidden',mode==='login');document.getElementById('cardTitle').textContent=mode==='login'?txt.loginTitle:txt.registerTitle;document.querySelector('.card .muted').textContent=mode==='login'?txt.loginHelp:txt.registerHelp;document.getElementById('submitButton').textContent=mode==='login'?txt.loginNow:txt.registerNow;document.getElementById('username').value=mode==='login'?'zhangsan':'';document.getElementById('password').value=mode==='login'?'zhangsan123':'';setNotice('')}document.getElementById('loginMode').onclick=()=>setMode('login');document.getElementById('registerMode').onclick=()=>setMode('register');document.querySelectorAll('.role').forEach(btn=>btn.onclick=()=>{selectedRole=btn.dataset.role;document.querySelectorAll('.role').forEach(x=>x.classList.toggle('active',x===btn))});document.getElementById('loginForm').onsubmit=async(e)=>{e.preventDefault();try{const username=document.getElementById('username').value.trim();const password=document.getElementById('password').value;if(mode==='register'){setNotice(txt.registering);await fetchJson('/api/register',{method:'POST',body:JSON.stringify({username,nickname:document.getElementById('nickname').value.trim(),password,invite_code:document.getElementById('inviteCode').value.trim()})});setNotice(txt.registerSuccess,'success');location.href=nextUrl;return}setNotice(txt.signing);const data=await fetchJson('/api/login',{method:'POST',body:JSON.stringify({username,password})});if(selectedRole==='admin'&&!data.user.is_admin){await fetchJson('/api/logout',{method:'POST'});setNotice(txt.notAdmin,'error');return}setNotice(txt.loginSuccess,'success');location.href=nextUrl}catch(err){setNotice(err.message,'error')}};</script></body></html>
+''', _LOGIN_ZH)
+
