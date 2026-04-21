@@ -85,10 +85,7 @@ def _normalize_subdomain(subdomain: str) -> str:
 
 def create_project_for_user(db: Session, user: User, payload: ProjectCreateRequest) -> ProjectOut:
     normalized_subdomain = _normalize_subdomain(payload.subdomain)
-    if payload.whitelist_user_ids and not user.is_admin:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only admins can set whitelist users")
-
-    granted_users = _validate_whitelist_user_ids(db, user, payload.whitelist_user_ids) if user.is_admin else []
+    granted_users = _validate_whitelist_user_ids(db, user, payload.whitelist_user_ids)
 
     project = Project(
         name=payload.name.strip(),
@@ -123,3 +120,4 @@ def update_project_access(db: Session, admin: User, project_id: int, payload: Pr
     db.refresh(project)
     access_type = "owner" if project.owner_id == admin.id else "admin"
     return serialize_project(project, access_type)
+

@@ -12,7 +12,7 @@ router = APIRouter(tags=["users"])
 
 
 @router.get("/users", response_model=list[UserOut])
-def users(_: User = Depends(require_admin), db: Session = Depends(get_db)) -> list[UserOut]:
+def users(_: User = Depends(require_user), db: Session = Depends(get_db)) -> list[UserOut]:
     return list_users(db)
 
 
@@ -32,3 +32,4 @@ def update_me(
     db: Session = Depends(get_db),
 ) -> UserOut:
     return update_current_user(db, user, payload)
+
