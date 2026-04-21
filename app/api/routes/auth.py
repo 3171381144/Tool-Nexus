@@ -32,7 +32,7 @@ def me(
     user = get_current_user(db, session_token)
     if not user:
         return SessionResponse(authenticated=False, user=None)
-    return SessionResponse(authenticated=True, user=UserOut(id=user.id, username=user.username))
+    return SessionResponse(authenticated=True, user=UserOut(id=user.id, username=user.username, is_admin=user.is_admin))
 
 
 def _build_login_redirect(forwarded_host: Optional[str], forwarded_uri: Optional[str]) -> str:
@@ -61,3 +61,4 @@ def forward_auth(
         if x_portal_auth_redirect == "1" and exc.status_code in {401, 403}:
             return RedirectResponse(url=_build_login_redirect(x_forwarded_host, x_forwarded_uri), status_code=302)
         raise
+

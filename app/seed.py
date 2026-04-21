@@ -1,21 +1,35 @@
-from sqlalchemy import select
+from sqlalchemy import inspect, select, text
+from sqlalchemy.orm import Session
 
 from app.db import SessionLocal, engine
 from app.models import Base, User
 from app.services.auth import hash_password
 
 
-def ensure_user(db: SessionLocal, username: str, password: str) -> None:
-    if db.scalar(select(User.id).where(User.username == username)) is not None:
-        return
-    db.add(User(username=username, password_hash=hash_password(password)))
+def ensure_schema() -> None:
+    Base.metadata.create_all(bind=engine)
+    with engine.begin() as connection:
+        columns = {column["name"] for column in inspect(connection).get_columns("users")}
+        if "is_admin" not in columns:
+            connection.execute(text("ALTER TABLE users ADD COLUMN is_admin BOOLEAN NOT NULL DEFAULT 0"))
+
+
+def ensure_user(db: Session, username: str, password: str, *, is_admin: bool = False) -> User:
+    user = db.scalar(select(User).where(User.username == username))
+    if user is None:
+        user = User(username=username, password_hash=hash_password(password), is_admin=is_admin)
+        db.add(user)
+        return user
+    if is_admin and not user.is_admin:
+        user.is_admin = True
+    return user
 
 
 def bootstrap_database() -> None:
-    Base.metadata.create_all(bind=engine)
+    ensure_schema()
 
     with SessionLocal() as db:
-        ensure_user(db, "zhangsan", "zhangsan123")
+        ensure_user(db, "zhangsan", "zhangsan123", is_admin=True)
         ensure_user(db, "lisi", "lisi123")
         ensure_user(db, "wangwu", "wangwu123")
         db.commit()

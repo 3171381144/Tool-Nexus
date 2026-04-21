@@ -1,11 +1,11 @@
-﻿from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
-from app.api.deps import require_user
+from app.api.deps import require_admin, require_user
 from app.db import get_db
 from app.models import User
-from app.schemas import ProjectCreateRequest, ProjectOut
-from app.services.projects import create_project_for_user, list_accessible_projects
+from app.schemas import ProjectAccessUpdateRequest, ProjectCreateRequest, ProjectOut
+from app.services.projects import create_project_for_user, list_accessible_projects, update_project_access
 
 
 router = APIRouter(tags=["projects"])
@@ -23,3 +23,13 @@ def create_project(
     db: Session = Depends(get_db),
 ) -> ProjectOut:
     return create_project_for_user(db, user, payload)
+
+
+@router.put("/projects/{project_id}/access", response_model=ProjectOut)
+def update_access(
+    project_id: int,
+    payload: ProjectAccessUpdateRequest,
+    admin: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+) -> ProjectOut:
+    return update_project_access(db, admin, project_id, payload)

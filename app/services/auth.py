@@ -1,4 +1,4 @@
-﻿import base64
+import base64
 import hashlib
 import hmac
 import json
@@ -110,7 +110,7 @@ def build_login_response(user: User, response: Response) -> LoginResponse:
         max_age=settings.session_ttl_seconds,
         path="/",
     )
-    return LoginResponse(message="登录成功", user=UserOut(id=user.id, username=user.username))
+    return LoginResponse(message="登录成功", user=UserOut(id=user.id, username=user.username, is_admin=user.is_admin))
 
 
 def build_logout_response(response: Response) -> SimpleMessageResponse:
@@ -178,3 +178,4 @@ def build_forward_auth_result(db: Session, session_token: Optional[str], forward
     response.headers["X-Auth-Project"] = project.subdomain
     response.headers["X-Auth-Access-Type"] = access_type
     return ForwardAuthResult(message="ok", project=project.subdomain, access_type=access_type)
+
