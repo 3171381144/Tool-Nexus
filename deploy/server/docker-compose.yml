@@ -13,6 +13,7 @@ services:
       REGISTRATION_INVITE_CODE: ${REGISTRATION_INVITE_CODE:-tool-nexus-invite}
       DATABASE_URL: sqlite:////data/portal.db
       SESSION_TTL_SECONDS: "43200"
+      FRP_HTTP_PROBE_URL: http://frps:8080
     volumes:
       - portal_data:/data
     expose:

@@ -1,3 +1,7 @@
+import socket
+from urllib.error import HTTPError, URLError
+from urllib.request import Request, urlopen
+
 from fastapi import HTTPException, status
 from sqlalchemy import delete, select
 from sqlalchemy.exc import IntegrityError
@@ -5,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.models import Project, ProjectAccess, User
-from app.schemas import ProjectAccessUpdateRequest, ProjectCreateRequest, ProjectOut, UserOut
+from app.schemas import ProjectAccessUpdateRequest, ProjectCreateRequest, ProjectDocsUpdateRequest, ProjectHealthOut, ProjectOut, UserOut
 
 
 def _display_name(user: User) -> str:
@@ -26,6 +30,8 @@ def serialize_project(project: Project, access_type: str) -> ProjectOut:
         owner_id=project.owner_id,
         owner_username=project.owner.username,
         owner_nickname=_display_name(project.owner),
+        description=project.description or "",
+        usage_guide=project.usage_guide or "",
         access_type=access_type,
         granted_users=granted_users,
     )
@@ -120,4 +126,57 @@ def update_project_access(db: Session, admin: User, project_id: int, payload: Pr
     db.refresh(project)
     access_type = "owner" if project.owner_id == admin.id else "admin"
     return serialize_project(project, access_type)
+
+
+
+
+
+def _can_edit_project(user: User, project: Project) -> bool:
+    return user.is_admin or project.owner_id == user.id
+
+
+def update_project_docs(db: Session, user: User, project_id: int, payload: ProjectDocsUpdateRequest) -> ProjectOut:
+    project = db.get(Project, project_id)
+    if project is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
+    if not _can_edit_project(user, project):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only owner or admin can edit project docs")
+
+    if payload.description is not None:
+        project.description = payload.description.strip()
+    if payload.usage_guide is not None:
+        project.usage_guide = payload.usage_guide.strip()
+
+    db.commit()
+    db.refresh(project)
+    access_type = "owner" if project.owner_id == user.id else "admin"
+    return serialize_project(project, access_type)
+
+
+def _probe_project(project: Project) -> ProjectHealthOut:
+    host = f"{project.subdomain}.{settings.root_domain}" if settings.root_domain else project.subdomain
+    request = Request(settings.frp_http_probe_url, headers={"Host": host, "User-Agent": "Tool-Nexus-Health/1.0"})
+    try:
+        with urlopen(request, timeout=2) as response:
+            return ProjectHealthOut(project_id=project.id, subdomain=project.subdomain, online=True, reason=f"HTTP {response.status}")
+    except HTTPError as exc:
+        body = exc.read(512).decode("utf-8", errors="ignore").lower()
+        is_frp_not_found = exc.code == 404 and "powered by frp" in body
+        is_upstream_down = exc.code in {502, 503, 504}
+        return ProjectHealthOut(
+            project_id=project.id,
+            subdomain=project.subdomain,
+            online=not (is_frp_not_found or is_upstream_down),
+            reason="frpc not connected" if is_frp_not_found else "local service down" if is_upstream_down else f"HTTP {exc.code}",
+        )
+    except (URLError, socket.timeout, TimeoutError):
+        return ProjectHealthOut(project_id=project.id, subdomain=project.subdomain, online=False, reason="probe failed")
+
+
+def check_accessible_project_health(db: Session, user: User) -> list[ProjectHealthOut]:
+    project_ids = [project.id for project in list_accessible_projects(db, user)]
+    if not project_ids:
+        return []
+    projects = db.scalars(select(Project).where(Project.id.in_(project_ids))).all()
+    return [_probe_project(project) for project in projects]
 

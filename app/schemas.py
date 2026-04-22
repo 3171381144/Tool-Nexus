@@ -64,6 +64,18 @@ class ProjectAccessUpdateRequest(BaseModel):
     whitelist_user_ids: list[int] = Field(default_factory=list)
 
 
+class ProjectDocsUpdateRequest(BaseModel):
+    description: str | None = Field(default=None, max_length=4000)
+    usage_guide: str | None = Field(default=None, max_length=8000)
+
+
+class ProjectHealthOut(BaseModel):
+    project_id: int
+    subdomain: str
+    online: bool
+    reason: str
+
+
 class ProjectOut(BaseModel):
     id: int
     name: str
@@ -72,5 +84,7 @@ class ProjectOut(BaseModel):
     owner_id: int
     owner_username: str
     owner_nickname: str
+    description: str = ""
+    usage_guide: str = ""
     access_type: str
     granted_users: list[UserOut] = Field(default_factory=list)

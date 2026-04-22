@@ -1,43 +1,33 @@
 Tool-Nexus client package
 
-Put these files in one folder:
-
+Files needed:
 - frpc.exe
-- frpc.toml
 - start.bat
+- configure-frpc.ps1
+- frpc.toml, optional but recommended if admin prefilled auth.token
 
 How to use:
+1. Start your local web projects.
+2. Confirm each local page works, for example:
+   http://127.0.0.1:8077/management.html#/
+   http://127.0.0.1:8019/
+3. Double click start.bat.
+4. First run: enter how many projects you want to expose, then fill each project.
+5. Later runs with existing frpc.toml:
+   Press Enter / S = start directly
+   A = add more projects
+   R = rebuild all config
+6. Keep the frpc window open.
+7. Open the printed public URLs, for example:
+   https://webxkk.aim888888.xyz/management.html#/
 
-1. Start your local web project first.
-2. Confirm it works locally, for example:
-   http://127.0.0.1:3000
-3. Copy frpc.toml.template to frpc.toml.
-4. Ask the admin for:
-   - FRP token
-   - subdomain
-   - public URL
-5. Edit frpc.toml:
-   - auth.token
-   - name
-   - localPort
-   - customDomains
-6. Double click start.bat.
-7. Keep the window open.
-8. Open your public URL, for example:
-   https://zhangsan-tool.aim888888.xyz
+One member only needs one frpc.exe and one frpc.toml. Multiple projects are written as multiple [[proxies]] blocks.
 
-Example frpc.toml:
+If auth.token is still change-this-frp-token, ask admin for the real FRP token.
 
-serverAddr = "frp.aim888888.xyz"
-serverPort = 7000
-auth.token = "your-real-token"
-transport.tls.enable = true
+Common errors:
+- powered by frp 404: frpc did not register the domain. Check token, domain, and logs.
+- Vite host blocked: add .aim888888.xyz to server.allowedHosts in vite.config.
 
-[[proxies]]
-name = "zhangsan-tool"
-type = "http"
-localIP = "127.0.0.1"
-localPort = 3000
-customDomains = ["zhangsan-tool.aim888888.xyz"]
-
-Do not close the frpc window while you want the public URL to stay available.
+frp docs: https://gofrp.org/en/docs/setup/
+frp download: https://github.com/fatedier/frp/releases

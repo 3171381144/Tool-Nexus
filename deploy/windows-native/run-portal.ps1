@@ -1,4 +1,4 @@
-﻿param(
+param(
     [string]$ProjectRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\.." )).Path,
     [string]$CondaCmd = "conda",
     [string]$CondaEnvName = "tool-nexus"
@@ -15,6 +15,7 @@ $env:COOKIE_SECURE = "true"
 $env:PORTAL_ROOT_DOMAIN = "aim888888.xyz"
 $env:DATABASE_URL = "sqlite:///$($ProjectRoot.Replace('\','/'))/portal.db"
 $env:SESSION_TTL_SECONDS = "43200"
+$env:FRP_HTTP_PROBE_URL = "http://127.0.0.1:8080"
 
 Push-Location $ProjectRoot
 try {

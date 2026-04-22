@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, ForeignKey, String, UniqueConstraint
+from sqlalchemy import Boolean, ForeignKey, String, Text, UniqueConstraint
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -26,6 +26,8 @@ class Project(Base):
     name: Mapped[str] = mapped_column(String(128))
     subdomain: Mapped[str] = mapped_column(String(63), unique=True, index=True)
     is_private: Mapped[bool] = mapped_column(Boolean, default=True)
+    description: Mapped[str] = mapped_column(Text, default="", server_default="")
+    usage_guide: Mapped[str] = mapped_column(Text, default="", server_default="")
     owner_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
 
     owner: Mapped[User] = relationship(back_populates="owned_projects")

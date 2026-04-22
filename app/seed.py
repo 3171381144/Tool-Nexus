@@ -16,6 +16,12 @@ def ensure_schema() -> None:
             connection.execute(text("ALTER TABLE users ADD COLUMN nickname VARCHAR(64) NOT NULL DEFAULT ''"))
         connection.execute(text("UPDATE users SET nickname = username WHERE nickname IS NULL OR nickname = ''"))
 
+        project_columns = {column["name"] for column in inspect(connection).get_columns("projects")}
+        if "description" not in project_columns:
+            connection.execute(text("ALTER TABLE projects ADD COLUMN description TEXT NOT NULL DEFAULT ''"))
+        if "usage_guide" not in project_columns:
+            connection.execute(text("ALTER TABLE projects ADD COLUMN usage_guide TEXT NOT NULL DEFAULT ''"))
+
 
 def ensure_user(db: Session, username: str, password: str, *, nickname: str = "", is_admin: bool = False) -> User:
     user = db.scalar(select(User).where(User.username == username))
