@@ -4,8 +4,8 @@ from sqlalchemy.orm import Session
 from app.api.deps import require_user
 from app.db import get_db
 from app.models import User
-from app.schemas import ProjectAccessUpdateRequest, ProjectCreateRequest, ProjectDocsUpdateRequest, ProjectHealthOut, ProjectOut
-from app.services.projects import check_accessible_project_health, create_project_for_user, list_accessible_projects, update_project_access, update_project_docs
+from app.schemas import ProjectAccessUpdateRequest, ProjectCreateRequest, ProjectDocsUpdateRequest, ProjectHealthOut, ProjectOut, SimpleMessageResponse
+from app.services.projects import check_accessible_project_health, create_project_for_user, delete_project, list_accessible_projects, update_project_access, update_project_docs
 
 
 router = APIRouter(tags=["projects"])
@@ -48,3 +48,11 @@ def update_access(
 ) -> ProjectOut:
     return update_project_access(db, user, project_id, payload)
 
+
+@router.delete("/projects/{project_id}", response_model=SimpleMessageResponse)
+def remove_project(
+    project_id: int,
+    user: User = Depends(require_user),
+    db: Session = Depends(get_db),
+) -> SimpleMessageResponse:
+    return delete_project(db, user, project_id)

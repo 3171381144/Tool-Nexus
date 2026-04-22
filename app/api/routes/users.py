@@ -4,8 +4,8 @@ from sqlalchemy.orm import Session
 from app.api.deps import require_admin, require_user
 from app.db import get_db
 from app.models import User
-from app.schemas import UserCreateRequest, UserOut, UserUpdateRequest
-from app.services.users import create_user, list_users, update_current_user
+from app.schemas import SimpleMessageResponse, UserCreateRequest, UserOut, UserUpdateRequest
+from app.services.users import create_user, delete_user, list_users, update_current_user
 
 
 router = APIRouter(tags=["users"])
@@ -33,3 +33,11 @@ def update_me(
 ) -> UserOut:
     return update_current_user(db, user, payload)
 
+
+@router.delete("/users/{user_id}", response_model=SimpleMessageResponse)
+def remove_user(
+    user_id: int,
+    admin_user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+) -> SimpleMessageResponse:
+    return delete_user(db, admin_user, user_id)

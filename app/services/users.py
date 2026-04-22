@@ -1,11 +1,11 @@
 from fastapi import HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
-from app.models import User
-from app.schemas import RegisterRequest, UserCreateRequest, UserOut, UserUpdateRequest
+from app.models import Project, ProjectAccess, User
+from app.schemas import RegisterRequest, SimpleMessageResponse, UserCreateRequest, UserOut, UserUpdateRequest
 from app.services.auth import hash_password
 
 
@@ -88,3 +88,30 @@ def update_current_user(db: Session, user: User, payload: UserUpdateRequest) -> 
 
     db.refresh(user)
     return serialize_user(user)
+
+
+def delete_user(db: Session, admin_user: User, user_id: int) -> SimpleMessageResponse:
+    user = db.get(User, user_id)
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    if admin_user.id == user.id:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Admin cannot delete current account")
+
+    if user.is_admin:
+        admin_count = len(db.scalars(select(User).where(User.is_admin.is_(True))).all())
+        if admin_count <= 1:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot delete the last admin")
+
+    owned_projects = db.scalars(select(Project).where(Project.owner_id == user.id)).all()
+    owned_project_ids = [project.id for project in owned_projects]
+
+    db.execute(delete(ProjectAccess).where(ProjectAccess.user_id == user.id))
+    if owned_project_ids:
+        db.execute(delete(ProjectAccess).where(ProjectAccess.project_id.in_(owned_project_ids)))
+        for project in owned_projects:
+            db.delete(project)
+
+    username = user.username
+    db.delete(user)
+    db.commit()
+    return SimpleMessageResponse(message=f"User deleted: {username}")

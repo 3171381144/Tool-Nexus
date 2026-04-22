@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.models import Project, ProjectAccess, User
-from app.schemas import ProjectAccessUpdateRequest, ProjectCreateRequest, ProjectDocsUpdateRequest, ProjectHealthOut, ProjectOut, UserOut
+from app.schemas import ProjectAccessUpdateRequest, ProjectCreateRequest, ProjectDocsUpdateRequest, ProjectHealthOut, ProjectOut, SimpleMessageResponse, UserOut
 
 
 def _display_name(user: User) -> str:
@@ -157,6 +157,20 @@ def update_project_docs(db: Session, user: User, project_id: int, payload: Proje
     db.refresh(project)
     access_type = "owner" if project.owner_id == user.id else "admin"
     return serialize_project(project, access_type)
+
+
+def delete_project(db: Session, user: User, project_id: int) -> SimpleMessageResponse:
+    project = db.get(Project, project_id)
+    if project is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
+    if not _can_edit_project(user, project):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only owner or admin can delete project")
+
+    project_name = project.name
+    db.execute(delete(ProjectAccess).where(ProjectAccess.project_id == project.id))
+    db.delete(project)
+    db.commit()
+    return SimpleMessageResponse(message=f"Project deleted: {project_name}")
 
 
 def _looks_like_frp_error_page(body: str) -> bool:
