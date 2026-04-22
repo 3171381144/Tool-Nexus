@@ -159,22 +159,27 @@ def update_project_docs(db: Session, user: User, project_id: int, payload: Proje
     return serialize_project(project, access_type)
 
 
+def _looks_like_frp_error_page(body: str) -> bool:
+    normalized_body = body.lower()
+    return "powered by frp" in normalized_body or "the page you requested was not found" in normalized_body
+
+
 def _probe_project(project: Project) -> ProjectHealthOut:
     host = f"{project.subdomain}.{settings.root_domain}" if settings.root_domain else project.subdomain
     request = Request(settings.frp_http_probe_url, headers={"Host": host, "User-Agent": "Tool-Nexus-Health/1.0"})
     try:
         with urlopen(request, timeout=2) as response:
+            body = response.read(1024).decode("utf-8", errors="ignore")
+            if _looks_like_frp_error_page(body):
+                return ProjectHealthOut(project_id=project.id, subdomain=project.subdomain, online=False, reason="frpc not connected")
             return ProjectHealthOut(project_id=project.id, subdomain=project.subdomain, online=True, reason=f"HTTP {response.status}")
     except HTTPError as exc:
-        body = exc.read(512).decode("utf-8", errors="ignore").lower()
-        is_frp_not_found = exc.code == 404 and "powered by frp" in body
-        is_upstream_down = exc.code in {502, 503, 504}
-        return ProjectHealthOut(
-            project_id=project.id,
-            subdomain=project.subdomain,
-            online=not (is_frp_not_found or is_upstream_down),
-            reason="frpc not connected" if is_frp_not_found else "local service down" if is_upstream_down else f"HTTP {exc.code}",
-        )
+        body = exc.read(1024).decode("utf-8", errors="ignore")
+        if _looks_like_frp_error_page(body) or exc.code == 404:
+            return ProjectHealthOut(project_id=project.id, subdomain=project.subdomain, online=False, reason="frpc not connected")
+        if exc.code in {502, 503, 504}:
+            return ProjectHealthOut(project_id=project.id, subdomain=project.subdomain, online=False, reason="local service down")
+        return ProjectHealthOut(project_id=project.id, subdomain=project.subdomain, online=True, reason=f"HTTP {exc.code}")
     except (URLError, socket.timeout, TimeoutError):
         return ProjectHealthOut(project_id=project.id, subdomain=project.subdomain, online=False, reason="probe failed")
 
