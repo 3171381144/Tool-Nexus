@@ -61,6 +61,7 @@ class ProjectCreateRequest(BaseModel):
 
 
 class ProjectAccessUpdateRequest(BaseModel):
+    is_private: bool | None = None
     whitelist_user_ids: list[int] = Field(default_factory=list)
 
 
@@ -88,3 +89,5 @@ class ProjectOut(BaseModel):
     usage_guide: str = ""
     access_type: str
     granted_users: list[UserOut] = Field(default_factory=list)
+
+

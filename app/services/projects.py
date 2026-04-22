@@ -113,10 +113,16 @@ def create_project_for_user(db: Session, user: User, payload: ProjectCreateReque
     return serialize_project(project, "owner")
 
 
-def update_project_access(db: Session, admin: User, project_id: int, payload: ProjectAccessUpdateRequest) -> ProjectOut:
+def update_project_access(db: Session, user: User, project_id: int, payload: ProjectAccessUpdateRequest) -> ProjectOut:
     project = db.get(Project, project_id)
     if not project:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
+
+    if not _can_edit_project(user, project):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only owner or admin can edit project access")
+
+    if payload.is_private is not None:
+        project.is_private = payload.is_private
 
     granted_users = _validate_whitelist_user_ids(db, project.owner, payload.whitelist_user_ids)
     db.execute(delete(ProjectAccess).where(ProjectAccess.project_id == project.id))
@@ -124,7 +130,7 @@ def update_project_access(db: Session, admin: User, project_id: int, payload: Pr
         db.add(ProjectAccess(project_id=project.id, user_id=granted_user.id))
     db.commit()
     db.refresh(project)
-    access_type = "owner" if project.owner_id == admin.id else "admin"
+    access_type = "owner" if project.owner_id == user.id else "admin"
     return serialize_project(project, access_type)
 
 
@@ -179,4 +185,5 @@ def check_accessible_project_health(db: Session, user: User) -> list[ProjectHeal
         return []
     projects = db.scalars(select(Project).where(Project.id.in_(project_ids))).all()
     return [_probe_project(project) for project in projects]
+
 

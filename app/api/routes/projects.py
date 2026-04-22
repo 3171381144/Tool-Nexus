@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
-from app.api.deps import require_admin, require_user
+from app.api.deps import require_user
 from app.db import get_db
 from app.models import User
 from app.schemas import ProjectAccessUpdateRequest, ProjectCreateRequest, ProjectDocsUpdateRequest, ProjectHealthOut, ProjectOut
@@ -43,7 +43,8 @@ def update_docs(
 def update_access(
     project_id: int,
     payload: ProjectAccessUpdateRequest,
-    admin: User = Depends(require_admin),
+    user: User = Depends(require_user),
     db: Session = Depends(get_db),
 ) -> ProjectOut:
-    return update_project_access(db, admin, project_id, payload)
+    return update_project_access(db, user, project_id, payload)
+
