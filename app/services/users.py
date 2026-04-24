@@ -4,9 +4,10 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
-from app.models import Project, ProjectAccess, User
+from app.models import CodeRepository, Project, ProjectAccess, RepositoryAccess, User
 from app.schemas import RegisterRequest, SimpleMessageResponse, UserCreateRequest, UserOut, UserUpdateRequest
 from app.services.auth import hash_password
+from app.services.repositories import delete_repository_storage
 
 
 def _clean_optional_text(value: str | None) -> str:
@@ -105,13 +106,28 @@ def delete_user(db: Session, admin_user: User, user_id: int) -> SimpleMessageRes
     owned_projects = db.scalars(select(Project).where(Project.owner_id == user.id)).all()
     owned_project_ids = [project.id for project in owned_projects]
 
+    owned_repositories = db.scalars(select(CodeRepository).where(CodeRepository.owner_id == user.id)).all()
+    owned_repository_ids = [repository.id for repository in owned_repositories]
+    owned_repository_storage_keys = [repository.storage_key for repository in owned_repositories]
+
     db.execute(delete(ProjectAccess).where(ProjectAccess.user_id == user.id))
+    db.execute(delete(RepositoryAccess).where(RepositoryAccess.user_id == user.id))
+
     if owned_project_ids:
         db.execute(delete(ProjectAccess).where(ProjectAccess.project_id.in_(owned_project_ids)))
         for project in owned_projects:
             db.delete(project)
 
+    if owned_repository_ids:
+        db.execute(delete(RepositoryAccess).where(RepositoryAccess.repository_id.in_(owned_repository_ids)))
+        for repository in owned_repositories:
+            db.delete(repository)
+
     username = user.username
     db.delete(user)
     db.commit()
+
+    for storage_key in owned_repository_storage_keys:
+        delete_repository_storage(storage_key)
+
     return SimpleMessageResponse(message=f"User deleted: {username}")

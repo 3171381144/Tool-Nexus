@@ -4,10 +4,12 @@ from sqlalchemy.orm import Session
 from app.db import SessionLocal, engine
 from app.models import Base, User
 from app.services.auth import hash_password
+from app.services.repositories import ensure_repository_storage
 
 
 def ensure_schema() -> None:
     Base.metadata.create_all(bind=engine)
+    ensure_repository_storage()
     with engine.begin() as connection:
         columns = {column["name"] for column in inspect(connection).get_columns("users")}
         if "is_admin" not in columns:

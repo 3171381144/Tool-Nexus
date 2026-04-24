@@ -91,3 +91,42 @@ class ProjectOut(BaseModel):
     granted_users: list[UserOut] = Field(default_factory=list)
 
 
+class RepositoryUpdateRequest(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=128)
+    description: str | None = Field(default=None, max_length=4000)
+
+
+class RepositoryAccessUpdateRequest(BaseModel):
+    is_private: bool | None = None
+    whitelist_user_ids: list[int] = Field(default_factory=list)
+
+
+class RepositoryFileEntryOut(BaseModel):
+    path: str
+    entry_type: str
+    size: int
+
+
+class RepositoryReadmeOut(BaseModel):
+    repository_id: int
+    name: str
+    description: str = ""
+    access_type: str
+    archive_name: str = ""
+    readme_path: str = ""
+    readme_html: str = ""
+    tree: list[RepositoryFileEntryOut] = Field(default_factory=list)
+
+
+class RepositoryOut(BaseModel):
+    id: int
+    name: str
+    description: str = ""
+    is_private: bool
+    owner_id: int
+    owner_username: str
+    owner_nickname: str
+    access_type: str
+    archive_name: str = ""
+    readme_path: str = ""
+    granted_users: list[UserOut] = Field(default_factory=list)

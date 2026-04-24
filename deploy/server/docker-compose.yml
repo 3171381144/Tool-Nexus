@@ -12,6 +12,7 @@ services:
       PORTAL_ROOT_DOMAIN: aim888888.xyz
       REGISTRATION_INVITE_CODE: ${REGISTRATION_INVITE_CODE:-tool-nexus-invite}
       DATABASE_URL: sqlite:////data/portal.db
+      REPOSITORY_STORAGE_DIR: /data/repositories
       SESSION_TTL_SECONDS: "43200"
       FRP_HTTP_PROBE_URL: http://frps:8080
     volumes:
@@ -46,4 +47,3 @@ services:
 
 volumes:
   portal_data:
-

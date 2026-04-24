@@ -2,7 +2,7 @@
 
 from fastapi import FastAPI
 
-from app.api.routes import auth_router, projects_router, users_router, web_router
+from app.api.routes import auth_router, projects_router, repositories_router, users_router, web_router
 from app.seed import bootstrap_database
 
 
@@ -15,8 +15,8 @@ async def lifespan(_: FastAPI):
 def create_app() -> FastAPI:
     app = FastAPI(
         title="Portal Auth Service",
-        description="用于内部工具聚合门户的 SSO 与 Forward Auth 服务",
-        version="1.0.0",
+        description="SSO and forward-auth service for the Tool Nexus portal",
+        version="1.1.0",
         lifespan=lifespan,
     )
 
@@ -27,5 +27,6 @@ def create_app() -> FastAPI:
     app.include_router(web_router)
     app.include_router(auth_router, prefix="/api")
     app.include_router(projects_router, prefix="/api")
+    app.include_router(repositories_router, prefix="/api")
     app.include_router(users_router, prefix="/api")
     return app
