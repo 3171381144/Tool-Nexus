@@ -1,4 +1,4 @@
-import html
+﻿import html
 import os
 import re
 import shutil
@@ -90,7 +90,6 @@ def _can_manage_repository(user: User, repository: CodeRepository) -> bool:
 def authorize_repository_access(db: Session, user: User, repository: CodeRepository) -> str:
     if repository.owner_id == user.id:
         return "owner"
-
     if not repository.is_private:
         return "public"
 
@@ -102,10 +101,8 @@ def authorize_repository_access(db: Session, user: User, repository: CodeReposit
     )
     if access_row:
         return "shared"
-
     if user.is_admin:
         return "admin"
-
     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No permission for this repository")
 
 
@@ -151,6 +148,14 @@ def _normalize_description(description: str | None) -> str:
     return (description or "").strip()
 
 
+def _is_hidden_part(part: str) -> bool:
+    return part.startswith(".") or part == "__MACOSX"
+
+
+def _is_visible_relative_path(relative_path: str) -> bool:
+    return all(not _is_hidden_part(part) for part in Path(relative_path).parts)
+
+
 def _extract_archive(archive_path: Path, extract_dir: Path) -> None:
     if extract_dir.exists():
         shutil.rmtree(extract_dir)
@@ -168,7 +173,7 @@ def _extract_archive(archive_path: Path, extract_dir: Path) -> None:
 def _resolve_repository_root(extract_dir: Path) -> Path:
     current = extract_dir
     for _ in range(4):
-        children = [child for child in current.iterdir() if child.name not in {"__MACOSX"}]
+        children = [child for child in current.iterdir() if not _is_hidden_part(child.name)]
         files = [child for child in children if child.is_file()]
         directories = [child for child in children if child.is_dir()]
         if files or len(directories) != 1:
@@ -183,6 +188,8 @@ def _find_readme_path(repository_root: Path) -> str:
         if not path.is_file():
             continue
         relative_path = path.relative_to(repository_root).as_posix()
+        if not _is_visible_relative_path(relative_path):
+            continue
         if path.name.lower() in README_CANDIDATES:
             matches.append((relative_path.count("/"), relative_path))
     if not matches:
@@ -202,7 +209,7 @@ def _apply_inline_markdown(text: str) -> str:
 
 def _render_markdown(markdown_text: str) -> str:
     if not markdown_text.strip():
-        return "<p class=\"repo-empty\">README is empty.</p>"
+        return '<p class="repo-empty">README is empty.</p>'
 
     html_parts: list[str] = []
     paragraph_lines: list[str] = []
@@ -298,7 +305,7 @@ def _build_tree(repository_root: Path, limit: int = 200) -> list[RepositoryFileE
         if len(entries) >= limit:
             break
         relative_path = path.relative_to(repository_root).as_posix()
-        if not relative_path:
+        if not relative_path or not _is_visible_relative_path(relative_path):
             continue
         entry_type = "dir" if path.is_dir() else "file"
         size = 0 if path.is_dir() else path.stat().st_size
@@ -336,17 +343,7 @@ def _store_repository_archive(repository: CodeRepository, archive_name: str, arc
     return readme_path
 
 
-def create_repository_for_user(
-    db: Session,
-    user: User,
-    *,
-    name: str,
-    description: str | None,
-    is_private: bool,
-    whitelist_user_ids: list[int],
-    archive_name: str,
-    archive_bytes: bytes,
-) -> RepositoryOut:
+def create_repository_for_user(db: Session, user: User, *, name: str, description: str | None, is_private: bool, whitelist_user_ids: list[int], archive_name: str, archive_bytes: bytes) -> RepositoryOut:
     ensure_repository_storage()
     granted_users = _validate_whitelist_user_ids(db, user, whitelist_user_ids)
     repository = CodeRepository(
@@ -412,14 +409,7 @@ def update_repository_access(db: Session, user: User, repository_id: int, payloa
     return _repository_out(repository, access_type)
 
 
-def replace_repository_archive(
-    db: Session,
-    user: User,
-    repository_id: int,
-    *,
-    archive_name: str,
-    archive_bytes: bytes,
-) -> RepositoryOut:
+def replace_repository_archive(db: Session, user: User, repository_id: int, *, archive_name: str, archive_bytes: bytes) -> RepositoryOut:
     repository = db.get(CodeRepository, repository_id)
     if repository is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Repository not found")
@@ -441,7 +431,7 @@ def get_repository_readme(db: Session, user: User, repository_id: int) -> Reposi
     access_type = authorize_repository_access(db, user, repository)
     repository_root = _repository_root(repository)
     tree = _build_tree(repository_root)
-    readme_html = "<p class=\"repo-empty\">No README found in this repository.</p>"
+    readme_html = '<p class="repo-empty">No README found in this repository.</p>'
     if repository.readme_path:
         readme_file = repository_root / repository.readme_path
         if readme_file.exists() and readme_file.is_file():
