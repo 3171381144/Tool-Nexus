@@ -30,6 +30,7 @@ class Project(Base):
     is_private: Mapped[bool] = mapped_column(Boolean, default=True)
     description: Mapped[str] = mapped_column(Text, default="", server_default="")
     usage_guide: Mapped[str] = mapped_column(Text, default="", server_default="")
+    entry_path: Mapped[str] = mapped_column(String(512), default="", server_default="")
     owner_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
 
     owner: Mapped[User] = relationship(back_populates="owned_projects")

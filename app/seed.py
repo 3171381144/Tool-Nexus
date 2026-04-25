@@ -23,6 +23,8 @@ def ensure_schema() -> None:
             connection.execute(text("ALTER TABLE projects ADD COLUMN description TEXT NOT NULL DEFAULT ''"))
         if "usage_guide" not in project_columns:
             connection.execute(text("ALTER TABLE projects ADD COLUMN usage_guide TEXT NOT NULL DEFAULT ''"))
+        if "entry_path" not in project_columns:
+            connection.execute(text("ALTER TABLE projects ADD COLUMN entry_path VARCHAR(512) NOT NULL DEFAULT ''"))
 
 
 def ensure_user(db: Session, username: str, password: str, *, nickname: str = "", is_admin: bool = False) -> User:

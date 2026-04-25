@@ -56,6 +56,7 @@ class ForwardAuthResult(BaseModel):
 class ProjectCreateRequest(BaseModel):
     name: str = Field(min_length=1, max_length=128)
     subdomain: str = Field(min_length=3, max_length=63)
+    entry_path: str | None = Field(default="", max_length=512)
     is_private: bool = True
     whitelist_user_ids: list[int] = Field(default_factory=list)
 
@@ -68,6 +69,7 @@ class ProjectAccessUpdateRequest(BaseModel):
 class ProjectDocsUpdateRequest(BaseModel):
     description: str | None = Field(default=None, max_length=4000)
     usage_guide: str | None = Field(default=None, max_length=8000)
+    entry_path: str | None = Field(default=None, max_length=512)
 
 
 class ProjectHealthOut(BaseModel):
@@ -87,6 +89,7 @@ class ProjectOut(BaseModel):
     owner_nickname: str
     description: str = ""
     usage_guide: str = ""
+    entry_path: str = ""
     access_type: str
     granted_users: list[UserOut] = Field(default_factory=list)
 

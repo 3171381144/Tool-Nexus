@@ -1,5 +1,6 @@
 import socket
 from urllib.error import HTTPError, URLError
+from urllib.parse import urlsplit
 from urllib.request import Request, urlopen
 
 from fastapi import HTTPException, status
@@ -32,6 +33,7 @@ def serialize_project(project: Project, access_type: str) -> ProjectOut:
         owner_nickname=_display_name(project.owner),
         description=project.description or "",
         usage_guide=project.usage_guide or "",
+        entry_path=project.entry_path or "",
         access_type=access_type,
         granted_users=granted_users,
     )
@@ -89,14 +91,39 @@ def _normalize_subdomain(subdomain: str) -> str:
     return normalized_subdomain
 
 
+def _normalize_entry_path(entry_path: str | None) -> str:
+    normalized_entry_path = (entry_path or "").strip()
+    if not normalized_entry_path:
+        return ""
+    lowered = normalized_entry_path.lower()
+    if lowered.startswith("http://") or lowered.startswith("https://"):
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Entry path must be a suffix like /login")
+    if not normalized_entry_path.startswith("/"):
+        normalized_entry_path = "/" + normalized_entry_path.lstrip()
+    return normalized_entry_path
+
+
+def _project_request_path(entry_path: str | None) -> str:
+    normalized_entry_path = _normalize_entry_path(entry_path)
+    if not normalized_entry_path:
+        return "/"
+    parsed = urlsplit(normalized_entry_path)
+    request_path = parsed.path or "/"
+    if parsed.query:
+        request_path += f"?{parsed.query}"
+    return request_path
+
+
 def create_project_for_user(db: Session, user: User, payload: ProjectCreateRequest) -> ProjectOut:
     normalized_subdomain = _normalize_subdomain(payload.subdomain)
+    normalized_entry_path = _normalize_entry_path(payload.entry_path)
     granted_users = _validate_whitelist_user_ids(db, user, payload.whitelist_user_ids)
 
     project = Project(
         name=payload.name.strip(),
         subdomain=normalized_subdomain,
         is_private=payload.is_private,
+        entry_path=normalized_entry_path,
         owner_id=user.id,
     )
     db.add(project)
@@ -152,6 +179,8 @@ def update_project_docs(db: Session, user: User, project_id: int, payload: Proje
         project.description = payload.description.strip()
     if payload.usage_guide is not None:
         project.usage_guide = payload.usage_guide.strip()
+    if payload.entry_path is not None:
+        project.entry_path = _normalize_entry_path(payload.entry_path)
 
     db.commit()
     db.refresh(project)
@@ -180,7 +209,8 @@ def _looks_like_frp_error_page(body: str) -> bool:
 
 def _probe_project(project: Project) -> ProjectHealthOut:
     host = f"{project.subdomain}.{settings.root_domain}" if settings.root_domain else project.subdomain
-    request = Request(settings.frp_http_probe_url, headers={"Host": host, "User-Agent": "Tool-Nexus-Health/1.0"})
+    request_url = settings.frp_http_probe_url.rstrip("/") + _project_request_path(project.entry_path)
+    request = Request(request_url, headers={"Host": host, "User-Agent": "Tool-Nexus-Health/1.0"})
     try:
         with urlopen(request, timeout=2) as response:
             body = response.read(1024).decode("utf-8", errors="ignore")

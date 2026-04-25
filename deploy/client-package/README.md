@@ -36,7 +36,11 @@ http://127.0.0.1:8019/
 
 ### 第 3 步：首次使用时填写项目信息
 
-首次运行时，脚本会先问你要暴露几个项目：
+**重要！！！
+先输入管理员给的密钥：
+<mark>`change-this-frp-token**`</mark>
+
+然后运行时，脚本会先问你要暴露几个项目：
 
 ```text
 How many projects do you want to expose? [1]
