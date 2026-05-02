@@ -1,4 +1,4 @@
-services:
+﻿services:
   portal:
     build:
       context: ../..
@@ -13,6 +13,7 @@ services:
       REGISTRATION_INVITE_CODE: ${REGISTRATION_INVITE_CODE:-tool-nexus-invite}
       DATABASE_URL: sqlite:////data/portal.db
       REPOSITORY_STORAGE_DIR: /data/repositories
+      PROJECT_MEDIA_DIR: /data/project_media
       SESSION_TTL_SECONDS: "43200"
       FRP_HTTP_PROBE_URL: http://frps:8080
     volumes:
@@ -47,3 +48,4 @@ services:
 
 volumes:
   portal_data:
+

@@ -1,11 +1,12 @@
-from fastapi import APIRouter, Depends, status
+﻿from fastapi import APIRouter, Depends, File, UploadFile, status
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
 from app.api.deps import require_user
 from app.db import get_db
 from app.models import User
 from app.schemas import ProjectAccessUpdateRequest, ProjectCreateRequest, ProjectDocsUpdateRequest, ProjectHealthOut, ProjectOut, SimpleMessageResponse
-from app.services.projects import check_accessible_project_health, create_project_for_user, delete_project, list_accessible_projects, update_project_access, update_project_docs
+from app.services.projects import check_accessible_project_health, create_project_for_user, delete_project, get_project_media_file, list_accessible_projects, update_project_access, update_project_cover, update_project_demo_video, update_project_docs
 
 
 router = APIRouter(tags=["projects"])
@@ -49,6 +50,39 @@ def update_access(
     return update_project_access(db, user, project_id, payload)
 
 
+
+@router.post("/projects/{project_id}/cover", response_model=ProjectOut)
+async def upload_project_cover(
+    project_id: int,
+    cover: UploadFile = File(...),
+    user: User = Depends(require_user),
+    db: Session = Depends(get_db),
+) -> ProjectOut:
+    cover_bytes = await cover.read()
+    return update_project_cover(db, user, project_id, cover.filename or "cover", cover_bytes)
+
+
+@router.post("/projects/{project_id}/demo-video", response_model=ProjectOut)
+async def upload_project_demo_video(
+    project_id: int,
+    video: UploadFile = File(...),
+    user: User = Depends(require_user),
+    db: Session = Depends(get_db),
+) -> ProjectOut:
+    video_bytes = await video.read()
+    return update_project_demo_video(db, user, project_id, video.filename or "demo.mp4", video_bytes)
+
+
+@router.get("/projects/{project_id}/media/{media_kind}", response_class=FileResponse)
+def project_media(
+    project_id: int,
+    media_kind: str,
+    user: User = Depends(require_user),
+    db: Session = Depends(get_db),
+) -> FileResponse:
+    media_path, media_type = get_project_media_file(db, user, project_id, media_kind)
+    return FileResponse(path=media_path, media_type=media_type)
+
 @router.delete("/projects/{project_id}", response_model=SimpleMessageResponse)
 def remove_project(
     project_id: int,
@@ -56,3 +90,4 @@ def remove_project(
     db: Session = Depends(get_db),
 ) -> SimpleMessageResponse:
     return delete_project(db, user, project_id)
+

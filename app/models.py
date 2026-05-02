@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, ForeignKey, String, Text, UniqueConstraint
+﻿from sqlalchemy import Boolean, ForeignKey, String, Text, UniqueConstraint
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -31,6 +31,8 @@ class Project(Base):
     description: Mapped[str] = mapped_column(Text, default="", server_default="")
     usage_guide: Mapped[str] = mapped_column(Text, default="", server_default="")
     entry_path: Mapped[str] = mapped_column(String(512), default="", server_default="")
+    cover_image_path: Mapped[str] = mapped_column(String(512), default="", server_default="")
+    demo_video_path: Mapped[str] = mapped_column(String(512), default="", server_default="")
     owner_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
 
     owner: Mapped[User] = relationship(back_populates="owned_projects")
@@ -75,3 +77,4 @@ class RepositoryAccess(Base):
 
     repository: Mapped[CodeRepository] = relationship(back_populates="granted_users")
     user: Mapped[User] = relationship(back_populates="repository_accesses")
+

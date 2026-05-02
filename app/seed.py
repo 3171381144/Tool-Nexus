@@ -1,15 +1,17 @@
-from sqlalchemy import inspect, select, text
+﻿from sqlalchemy import inspect, select, text
 from sqlalchemy.orm import Session
 
 from app.db import SessionLocal, engine
 from app.models import Base, User
 from app.services.auth import hash_password
+from app.services.projects import ensure_project_media_storage
 from app.services.repositories import ensure_repository_storage
 
 
 def ensure_schema() -> None:
     Base.metadata.create_all(bind=engine)
     ensure_repository_storage()
+    ensure_project_media_storage()
     with engine.begin() as connection:
         columns = {column["name"] for column in inspect(connection).get_columns("users")}
         if "is_admin" not in columns:
@@ -25,6 +27,10 @@ def ensure_schema() -> None:
             connection.execute(text("ALTER TABLE projects ADD COLUMN usage_guide TEXT NOT NULL DEFAULT ''"))
         if "entry_path" not in project_columns:
             connection.execute(text("ALTER TABLE projects ADD COLUMN entry_path VARCHAR(512) NOT NULL DEFAULT ''"))
+        if "cover_image_path" not in project_columns:
+            connection.execute(text("ALTER TABLE projects ADD COLUMN cover_image_path VARCHAR(512) NOT NULL DEFAULT ''"))
+        if "demo_video_path" not in project_columns:
+            connection.execute(text("ALTER TABLE projects ADD COLUMN demo_video_path VARCHAR(512) NOT NULL DEFAULT ''"))
 
 
 def ensure_user(db: Session, username: str, password: str, *, nickname: str = "", is_admin: bool = False) -> User:
@@ -53,3 +59,4 @@ def bootstrap_database() -> None:
         ensure_user(db, "lisi", "lisi123", nickname="Lisi")
         ensure_user(db, "wangwu", "wangwu123", nickname="Wangwu")
         db.commit()
+

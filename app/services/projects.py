@@ -1,4 +1,7 @@
+﻿import mimetypes
+import shutil
 import socket
+from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlsplit
 from urllib.request import Request, urlopen
@@ -21,6 +24,78 @@ def _user_out(user: User) -> UserOut:
     return UserOut(id=user.id, username=user.username, nickname=_display_name(user), is_admin=user.is_admin)
 
 
+
+IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".gif"}
+VIDEO_EXTENSIONS = {".mp4", ".webm", ".mov", ".m4v"}
+IMAGE_MAX_BYTES = 10 * 1024 * 1024
+VIDEO_MAX_BYTES = 200 * 1024 * 1024
+
+
+def ensure_project_media_storage() -> None:
+    Path(settings.project_media_dir).mkdir(parents=True, exist_ok=True)
+
+
+def project_media_path(project_id: int) -> Path:
+    return Path(settings.project_media_dir) / str(project_id)
+
+
+def delete_project_media(project_id: int) -> None:
+    path = project_media_path(project_id)
+    if path.exists():
+        shutil.rmtree(path, ignore_errors=True)
+
+
+def _project_media_url(project: Project, media_kind: str) -> str:
+    if media_kind == "cover" and project.cover_image_path:
+        return f"/api/projects/{project.id}/media/cover"
+    if media_kind == "demo-video" and project.demo_video_path:
+        return f"/api/projects/{project.id}/media/demo-video"
+    return ""
+
+
+def _validate_project_media(file_name: str, file_bytes: bytes, media_kind: str) -> str:
+    suffix = Path(file_name or "").suffix.lower()
+    allowed_extensions = IMAGE_EXTENSIONS if media_kind == "cover" else VIDEO_EXTENSIONS
+    max_bytes = IMAGE_MAX_BYTES if media_kind == "cover" else VIDEO_MAX_BYTES
+    label = "cover image" if media_kind == "cover" else "demo video"
+    if suffix not in allowed_extensions:
+        allowed = ", ".join(sorted(allowed_extensions))
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=f"Unsupported {label} type. Allowed: {allowed}")
+    if not file_bytes:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=f"{label.title()} cannot be empty")
+    if len(file_bytes) > max_bytes:
+        raise HTTPException(status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, detail=f"{label.title()} is too large")
+    return suffix
+
+
+def _replace_project_media_file(project: Project, media_kind: str, file_name: str, file_bytes: bytes) -> None:
+    ensure_project_media_storage()
+    suffix = _validate_project_media(file_name, file_bytes, media_kind)
+    directory = project_media_path(project.id)
+    directory.mkdir(parents=True, exist_ok=True)
+    stem = "cover" if media_kind == "cover" else "demo"
+    for existing_file in directory.glob(f"{stem}.*"):
+        if existing_file.is_file():
+            existing_file.unlink()
+    relative_path = Path(str(project.id)) / f"{stem}{suffix}"
+    (Path(settings.project_media_dir) / relative_path).write_bytes(file_bytes)
+    if media_kind == "cover":
+        project.cover_image_path = relative_path.as_posix()
+    else:
+        project.demo_video_path = relative_path.as_posix()
+
+
+def _can_view_project(db: Session, user: User, project: Project) -> bool:
+    if user.is_admin or project.owner_id == user.id or not project.is_private:
+        return True
+    access_row = db.scalar(
+        select(ProjectAccess).where(
+            ProjectAccess.project_id == project.id,
+            ProjectAccess.user_id == user.id,
+        )
+    )
+    return access_row is not None
+
 def serialize_project(project: Project, access_type: str) -> ProjectOut:
     granted_users = [_user_out(access.user) for access in project.granted_users]
     return ProjectOut(
@@ -34,6 +109,8 @@ def serialize_project(project: Project, access_type: str) -> ProjectOut:
         description=project.description or "",
         usage_guide=project.usage_guide or "",
         entry_path=project.entry_path or "",
+        cover_image_path=_project_media_url(project, "cover"),
+        demo_video_path=_project_media_url(project, "demo-video"),
         access_type=access_type,
         granted_users=granted_users,
     )
@@ -188,6 +265,55 @@ def update_project_docs(db: Session, user: User, project_id: int, payload: Proje
     return serialize_project(project, access_type)
 
 
+
+
+def update_project_cover(db: Session, user: User, project_id: int, file_name: str, file_bytes: bytes) -> ProjectOut:
+    project = db.get(Project, project_id)
+    if project is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
+    if not _can_edit_project(user, project):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only owner or admin can update project cover")
+
+    _replace_project_media_file(project, "cover", file_name, file_bytes)
+    db.commit()
+    db.refresh(project)
+    access_type = "owner" if project.owner_id == user.id else "admin"
+    return serialize_project(project, access_type)
+
+
+def update_project_demo_video(db: Session, user: User, project_id: int, file_name: str, file_bytes: bytes) -> ProjectOut:
+    project = db.get(Project, project_id)
+    if project is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
+    if not _can_edit_project(user, project):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only owner or admin can update project demo video")
+
+    _replace_project_media_file(project, "demo-video", file_name, file_bytes)
+    db.commit()
+    db.refresh(project)
+    access_type = "owner" if project.owner_id == user.id else "admin"
+    return serialize_project(project, access_type)
+
+
+def get_project_media_file(db: Session, user: User, project_id: int, media_kind: str) -> tuple[Path, str]:
+    project = db.get(Project, project_id)
+    if project is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
+    if not _can_view_project(db, user, project):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No permission for this project")
+
+    relative_path = project.cover_image_path if media_kind == "cover" else project.demo_video_path
+    if not relative_path:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project media not found")
+    root = Path(settings.project_media_dir).resolve()
+    file_path = (Path(settings.project_media_dir) / relative_path).resolve()
+    if root not in file_path.parents:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project media not found")
+    if not file_path.exists() or not file_path.is_file():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project media not found")
+    media_type = mimetypes.guess_type(file_path.name)[0] or "application/octet-stream"
+    return file_path, media_type
+
 def delete_project(db: Session, user: User, project_id: int) -> SimpleMessageResponse:
     project = db.get(Project, project_id)
     if project is None:
@@ -197,8 +323,10 @@ def delete_project(db: Session, user: User, project_id: int) -> SimpleMessageRes
 
     project_name = project.name
     db.execute(delete(ProjectAccess).where(ProjectAccess.project_id == project.id))
+    project_id_for_media = project.id
     db.delete(project)
     db.commit()
+    delete_project_media(project_id_for_media)
     return SimpleMessageResponse(message=f"Project deleted: {project_name}")
 
 
@@ -234,5 +362,7 @@ def check_accessible_project_health(db: Session, user: User) -> list[ProjectHeal
         return []
     projects = db.scalars(select(Project).where(Project.id.in_(project_ids))).all()
     return [_probe_project(project) for project in projects]
+
+
 
 

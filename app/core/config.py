@@ -1,4 +1,4 @@
-import os
+﻿import os
 import re
 from dataclasses import dataclass
 
@@ -14,9 +14,11 @@ class Settings:
     registration_invite_code: str = os.getenv("REGISTRATION_INVITE_CODE", "tool-nexus-invite")
     frp_http_probe_url: str = os.getenv("FRP_HTTP_PROBE_URL", "http://127.0.0.1:8080")
     repository_storage_dir: str = os.getenv("REPOSITORY_STORAGE_DIR", "./repository_storage")
+    project_media_dir: str = os.getenv("PROJECT_MEDIA_DIR", "./project_media")
     session_ttl_seconds: int = int(os.getenv("SESSION_TTL_SECONDS", "43200"))
     pbkdf2_iterations: int = 120_000
     subdomain_re: re.Pattern[str] = re.compile(r"^[a-z0-9](?:[a-z0-9-]{1,61}[a-z0-9])?$")
 
 
 settings = Settings()
+

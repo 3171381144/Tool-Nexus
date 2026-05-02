@@ -1,4 +1,4 @@
-from fastapi import HTTPException, status
+﻿from fastapi import HTTPException, status
 from sqlalchemy import delete, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -7,6 +7,7 @@ from app.core.config import settings
 from app.models import CodeRepository, Project, ProjectAccess, RepositoryAccess, User
 from app.schemas import RegisterRequest, SimpleMessageResponse, UserCreateRequest, UserOut, UserUpdateRequest
 from app.services.auth import hash_password
+from app.services.projects import delete_project_media
 from app.services.repositories import delete_repository_storage
 
 
@@ -127,7 +128,13 @@ def delete_user(db: Session, admin_user: User, user_id: int) -> SimpleMessageRes
     db.delete(user)
     db.commit()
 
+    for project_id in owned_project_ids:
+        delete_project_media(project_id)
+
     for storage_key in owned_repository_storage_keys:
         delete_repository_storage(storage_key)
 
     return SimpleMessageResponse(message=f"User deleted: {username}")
+
+
+

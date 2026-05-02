@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+﻿from pydantic import BaseModel, Field
 
 
 class LoginRequest(BaseModel):
@@ -90,6 +90,8 @@ class ProjectOut(BaseModel):
     description: str = ""
     usage_guide: str = ""
     entry_path: str = ""
+    cover_image_path: str = ""
+    demo_video_path: str = ""
     access_type: str
     granted_users: list[UserOut] = Field(default_factory=list)
 
@@ -133,3 +135,4 @@ class RepositoryOut(BaseModel):
     archive_name: str = ""
     readme_path: str = ""
     granted_users: list[UserOut] = Field(default_factory=list)
+
